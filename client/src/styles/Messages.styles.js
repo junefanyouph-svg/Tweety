@@ -1,0 +1,47 @@
+export const styles = {
+    container: { maxWidth: '620px', margin: '0 auto', padding: '0 12px', width: '100%', boxSizing: 'border-box' },
+    header: { padding: '24px 0 16px', borderBottom: '1px solid var(--color-border-dark)', position: 'sticky', top: 0, backgroundColor: 'var(--color-bg-dark)', zIndex: 10, display: 'flex', alignItems: 'center', gap: '12px' },
+    title: { fontSize: '1.3rem', fontWeight: 'bold', color: 'var(--color-text-main)' },
+    list: { paddingTop: '8px', paddingBottom: '32px' },
+    skeletonList: { paddingTop: '8px', paddingBottom: '32px' },
+    skeletonRow: { display: 'flex', alignItems: 'center', gap: '12px', padding: '16px 0' },
+    skeletonAvatar: {
+        width: '48px',
+        height: '48px',
+        borderRadius: '50%',
+        background: 'linear-gradient(90deg, var(--color-surface) 0%, var(--color-border-dark) 50%, var(--color-surface) 100%)',
+        backgroundSize: '200% 100%',
+        animation: 'dm-skeleton 1.4s ease-in-out infinite',
+        flexShrink: 0
+    },
+    skeletonInfo: { flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' },
+    skeletonLineShort: {
+        width: '40%',
+        height: '10px',
+        borderRadius: '999px',
+        background: 'linear-gradient(90deg, var(--color-surface) 0%, var(--color-border-dark) 50%, var(--color-surface) 100%)',
+        backgroundSize: '200% 100%',
+        animation: 'dm-skeleton 1.4s ease-in-out infinite'
+    },
+    skeletonLineFull: {
+        width: '80%',
+        height: '10px',
+        borderRadius: '999px',
+        background: 'linear-gradient(90deg, var(--color-surface) 0%, var(--color-border-dark) 50%, var(--color-surface) 100%)',
+        backgroundSize: '200% 100%',
+        animation: 'dm-skeleton 1.4s ease-in-out infinite'
+    },
+    emptyState: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', marginTop: '80px', gap: '16px' },
+    emptyIcon: { fontSize: '3rem', color: 'var(--color-border-dark)' },
+    emptyText: { color: 'var(--color-text-dim)', fontSize: '1rem' },
+    conversation: { display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', borderBottom: '1px solid var(--color-border-dark)', cursor: 'pointer', borderRadius: '12px', transition: 'background 0.2s' },
+    unread: { backgroundColor: 'var(--color-surface)' },
+    avatar: { width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#00BFA6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', fontWeight: 'bold', color: 'white', flexShrink: 0 },
+    avatarImg: { width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--color-border-dark)' },
+    info: { flex: 1, overflow: 'hidden' },
+    nameHeader: { display: 'flex', justifyContent: 'space-between', marginBottom: '2px' },
+    displayName: { fontWeight: 'bold', color: 'var(--color-text-main)', fontSize: '0.95rem' },
+    date: { color: 'var(--color-text-dim)', fontSize: '0.8rem' },
+    lastMessage: { color: '#aaa', fontSize: '0.9rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+    unreadBadge: { width: '10px', height: '10px', backgroundColor: '#00BFA6', borderRadius: '50%', marginLeft: '8px' },
+}

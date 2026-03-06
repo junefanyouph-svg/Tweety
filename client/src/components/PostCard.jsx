@@ -1,0 +1,683 @@
+import React, { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { supabase } from '../supabase'
+import GifPicker from './GifPicker'
+import UserMentionPicker from './UserMentionPicker'
+import { getCache, setCache, invalidateCache } from '../utils/cache'
+import { getProfile } from '../utils/profileCache'
+import RichTextEditor from './RichTextEditor'
+import { broadcastLike, broadcastComment, broadcastCommentLike } from '../utils/interactionsChannel'
+
+const API_URL = import.meta.env.VITE_API_URL
+
+function escapeRegExp(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function highlightText(text, q) {
+  if (!text) return text
+  const terms = (q || '').trim().split(/\s+/).filter(Boolean).filter(t => t.length >= 2)
+  if (terms.length === 0) return text
+  const pattern = terms.map(escapeRegExp).join('|')
+  const regex = new RegExp(`(${pattern})`, 'gi')
+  const parts = String(text).split(regex)
+  return parts.map((part, idx) => regex.test(part) ? <b key={idx}>{part}</b> : <span key={idx}>{part}</span>)
+}
+
+const renderContent = (text, navigate, query = '') => {
+  if (!text) return null
+  const lines = String(text).split('\n')
+  const getYoutubeId = (url) => {
+    const regExp = /^.*(youtu.be\/|v\/|u\/|\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/
+    const match = url.match(regExp)
+    return (match && match[2].length === 11) ? match[2] : null
+  }
+  return lines.map((line, lineIdx) => {
+    const parts = line.split(/(@[a-zA-Z0-9_]+)/g)
+    const renderedLine = parts.map((part, idx) => {
+      if (part.startsWith('@')) {
+        const username = part.slice(1)
+        return (
+          <span key={`${lineIdx}-${idx}`} style={{ color: 'rgb(0, 191, 166)', cursor: 'pointer', fontWeight: 'bold' }} onClick={(e) => { e.stopPropagation(); navigate(`/profile/${username}`) }}>
+            {part}
+          </span>
+        )
+      }
+      const urlRegex = /(https?:\/\/[^\s]+)/g
+      const urlParts = part.split(urlRegex)
+      return urlParts.map((urlPart, urlIdx) => {
+        if (urlRegex.test(urlPart)) {
+          const ytId = getYoutubeId(urlPart)
+          if (ytId) {
+            return (
+              <div key={`${lineIdx}-${idx}-${urlIdx}`} style={{ marginTop: '10px', marginBottom: '10px' }}>
+                <iframe width="100%" height="315" src={`https://www.youtube.com/embed/${ytId}`} title="YouTube video player" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen style={{ borderRadius: '12px', border: 'none' }} onClick={(e) => e.stopPropagation()}></iframe>
+              </div>
+            )
+          }
+          return <a key={`${lineIdx}-${idx}-${urlIdx}`} href={urlPart} target="_blank" rel="noopener noreferrer" style={{ color: '#1d9bf0', textDecoration: 'underline', wordBreak: 'break-all' }} onClick={(e) => e.stopPropagation()}>{urlPart}</a>
+        }
+        return highlightText(urlPart, query)
+      })
+    })
+    return <div key={lineIdx} style={{ minHeight: '1.2em' }}>{renderedLine}</div>
+  })
+}
+
+export default function PostCard({ post, user, onDelete, onNavigate, defaultOpenComments = false, highlightQuery = '' }) {
+  const [likes, setLikes] = useState([])
+  const [comments, setComments] = useState([])
+  const [commentInput, setCommentInput] = useState('')
+  const [commentImage, setCommentImage] = useState(null)
+  const [commentImagePreview, setCommentImagePreview] = useState(null)
+  const [commentGifUrl, setCommentGifUrl] = useState(null)
+  const [showCommentGifPicker, setShowCommentGifPicker] = useState(false)
+  const [showComments, setShowComments] = useState(defaultOpenComments)
+  const [closingComments, setClosingComments] = useState(false)
+  const [commentMenuOpen, setCommentMenuOpen] = useState(null)
+  const [hiddenComments, setHiddenComments] = useState([])
+  const [deletingCommentId, setDeletingCommentId] = useState(null)
+  const [viewingImage, setViewingImage] = useState(null)
+  const [commentSending, setCommentSending] = useState(false)
+  const [replyingTo, setReplyingTo] = useState(null)
+  const [replyContent, setReplyContent] = useState('')
+  const [showMenu, setShowMenu] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [toast, setToast] = useState(false)
+  const [heartAnim, setHeartAnim] = useState(false)
+  const [authorDisplayName, setAuthorDisplayName] = useState(post.profiles?.display_name || null)
+  const [authorAvatarUrl, setAuthorAvatarUrl] = useState(post.profiles?.avatar_url || null)
+  const [animatingCommentId, setAnimatingCommentId] = useState(null)
+  const [collapsedThreads, setCollapsedThreads] = useState([])
+  const [showMentionPicker, setShowMentionPicker] = useState(false)
+  const [mentionSearchQuery, setMentionSearchQuery] = useState('')
+  const [mentionPickerPosition, setMentionPickerPosition] = useState({ top: 0, left: 0 })
+  const [activeComposer, setActiveComposer] = useState(null) // 'main' or comment.id
+  const [showMediaMenu, setShowMediaMenu] = useState(null)
+  const [editingPost, setEditingPost] = useState(false)
+  const [editPostText, setEditPostText] = useState('')
+  const [editingComment, setEditingComment] = useState(null)
+  const [editCommentText, setEditCommentText] = useState('')
+  const likesRef = useRef([])
+  const menuRef = useRef(null)
+  const [hoveredComment, setHoveredComment] = useState(null)
+  const commentMenuRef = useRef(null)
+  const commentFileRef = useRef(null)
+  const commentInputRef = useRef(null)
+  const commentBoxRef = useRef(null)
+  const lastCommentCursorPos = useRef(0)
+  const navigate = useNavigate()
+  const fetchFnRef = useRef({ fetchLikes: null, fetchComments: null })
+  const commentsRef = useRef([])
+  const closeCommentsTimerRef = useRef(null)
+
+  fetchFnRef.current.fetchLikes = async () => {
+    const { data } = await supabase.from('likes').select('*').eq('post_id', post.id)
+    if (data) { likesRef.current = data; setLikes(data) }
+  }
+  fetchFnRef.current.fetchComments = async () => {
+    const { data } = await supabase.from('comments').select('*, profiles(avatar_url, display_name), comment_likes(user_id)').eq('post_id', post.id).order('created_at', { ascending: true })
+    if (data) { setComments(data); commentsRef.current = data }
+  }
+
+  useEffect(() => {
+    fetchFnRef.current.fetchLikes(); fetchFnRef.current.fetchComments();
+    const handleGlobalLike = (e) => {
+      const p = e.detail; if ((p.new && String(p.new.post_id) === String(post.id)) || (p.old && String(p.old.post_id) === String(post.id))) fetchFnRef.current.fetchLikes()
+    }
+    const handleGlobalComment = (e) => {
+      const p = e.detail; if ((p.new && String(p.new.post_id) === String(post.id)) || (p.old && String(p.old.post_id) === String(post.id))) fetchFnRef.current.fetchComments()
+    }
+    const handleGlobalCommentLike = (e) => {
+      const p = e.detail; const cId = p.new?.comment_id || p.old?.comment_id
+      if (cId && commentsRef.current.some(c => String(c.id) === String(cId))) fetchFnRef.current.fetchComments()
+    }
+    window.addEventListener('tweety_global_like', handleGlobalLike); window.addEventListener('tweety_global_comment', handleGlobalComment); window.addEventListener('tweety_global_comment_like', handleGlobalCommentLike);
+    return () => { window.removeEventListener('tweety_global_like', handleGlobalLike); window.removeEventListener('tweety_global_comment', handleGlobalComment); window.removeEventListener('tweety_global_comment_like', handleGlobalCommentLike); }
+  }, [post.id])
+
+  useEffect(() => {
+    if (!authorDisplayName || !authorAvatarUrl) {
+      getProfile(post.username, API_URL).then(d => { if (d) { setAuthorDisplayName(d.display_name || null); setAuthorAvatarUrl(d.avatar_url || null) } })
+    }
+  }, [post.username])
+
+  useEffect(() => {
+    return () => {
+      if (closeCommentsTimerRef.current) clearTimeout(closeCommentsTimerRef.current)
+    }
+  }, [])
+
+  const toggleComments = () => {
+    if (showComments) {
+      if (closingComments) return
+      setClosingComments(true)
+      if (closeCommentsTimerRef.current) clearTimeout(closeCommentsTimerRef.current)
+      closeCommentsTimerRef.current = setTimeout(() => {
+        setShowComments(false)
+        setClosingComments(false)
+      }, 220)
+      return
+    }
+    if (closeCommentsTimerRef.current) clearTimeout(closeCommentsTimerRef.current)
+    setClosingComments(false)
+    setShowComments(true)
+  }
+
+  const toggleCollapse = (id) => setCollapsedThreads(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+
+  const handleCommentFileChange = (e) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setCommentImage(file)
+      const reader = new FileReader()
+      reader.onloadend = () => setCommentImagePreview(reader.result)
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const handleLike = async () => {
+    if (!user) return
+    const userId = user.id
+    const username = user.user_metadata?.username
+    const already = likesRef.current.find(l => l.user_id === userId)
+    if (already) {
+      const newLikes = likesRef.current.filter(l => l.user_id !== userId)
+      likesRef.current = newLikes
+      setLikes(newLikes)
+      await supabase.from('likes').delete().eq('post_id', post.id).eq('user_id', userId)
+      await broadcastLike({ sender_id: userId, post_id: post.id, action: 'unlike' })
+    } else {
+      setHeartAnim(true); setTimeout(() => setHeartAnim(false), 400)
+      const newLike = { post_id: post.id, user_id: userId }
+      const newLikes = [...likesRef.current, newLike]
+      likesRef.current = newLikes
+      setLikes(newLikes)
+      // Use the API endpoint so the server can fire a like notification to the post owner
+      fetch(`${API_URL}/likes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ post_id: post.id, user_id: userId, username })
+      }).catch(err => console.error('Like API error:', err))
+      await broadcastLike({ sender_id: userId, post_id: post.id, action: 'like' })
+    }
+  }
+
+  const handleEditPost = async () => {
+    if (!editPostText.trim()) return
+    const res = await fetch(`${API_URL}/posts/${post.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: editPostText })
+    })
+    if (res.ok) {
+      setEditingPost(false)
+    }
+  }
+
+  const handleEditComment = async (commentId) => {
+    if (!editCommentText.trim()) return
+    const res = await fetch(`${API_URL}/comments/${commentId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: editCommentText })
+    })
+    if (res.ok) {
+      const updated = await res.json()
+      const updatedComments = commentsRef.current.map(c =>
+        c.id === commentId ? { ...c, content: updated.content, edited: true } : c
+      )
+      commentsRef.current = updatedComments
+      setComments(updatedComments)
+      setEditingComment(null)
+      setEditCommentText('')
+    }
+  }
+
+  const handleCommentLike = async (comment) => {
+    if (!user) return; const id = comment.id; const already = comment.comment_likes?.some(l => l.user_id === user.id)
+    if (!already) { setAnimatingCommentId(id); setTimeout(() => setAnimatingCommentId(null), 400) }
+
+    // Update local state and ref if we had a commentsRef (we do)
+    const updatedComments = commentsRef.current.map(c =>
+      c.id === id ? {
+        ...c,
+        comment_likes: already
+          ? (c.comment_likes || []).filter(l => l.user_id !== user.id)
+          : [...(c.comment_likes || []), { user_id: user.id, comment_id: id }]
+      } : c
+    )
+    commentsRef.current = updatedComments
+    setComments(updatedComments)
+
+    if (already) {
+      await supabase.from('comment_likes').delete().eq('comment_id', id).eq('user_id', user.id)
+      await broadcastCommentLike({ sender_id: user.id, comment_id: id, action: 'unlike' })
+    } else {
+      await supabase.from('comment_likes').insert([{ comment_id: id, user_id: user.id }])
+      await broadcastCommentLike({ sender_id: user.id, comment_id: id, action: 'like' })
+    }
+  }
+
+  const handleComment = async (e, parent_id = null) => {
+    const content = parent_id ? replyContent : commentInput
+    if (!content.trim() && !commentImage && !commentGifUrl) return; setCommentSending(true)
+    let imageUrl = commentGifUrl
+    if (commentImage) {
+      const fileName = `comment-${user.id}-${Date.now()}`; const { data } = await supabase.storage.from('post-images').upload(fileName, commentImage)
+      if (data) imageUrl = supabase.storage.from('post-images').getPublicUrl(fileName).data.publicUrl
+    }
+    const res = await fetch(`${API_URL}/comments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ post_id: post.id, user_id: user.id, username: user.user_metadata.username, content, image_url: imageUrl, parent_id })
+    })
+    const json = await res.json()
+    const serverComment = Array.isArray(json) ? json[0] : json
+
+    if (serverComment) {
+      fetchFnRef.current.fetchComments()
+      // Notification to the post owner is handled server-side in /routes/comments.js
+      await broadcastComment({ sender_id: user.id, post_id: post.id, comment_id: serverComment.id, action: 'insert', parent_id })
+    }
+    if (parent_id) { setReplyingTo(null); setReplyContent('') } else { setCommentInput(''); setCommentImage(null); setCommentImagePreview(null); setCommentGifUrl(null) }
+    setCommentSending(false)
+  }
+
+  const handleComposerChange = (e, type, id = null) => {
+    const newContent = e.target.value
+    if (type === 'main') setCommentInput(newContent)
+    else setReplyContent(newContent)
+
+    const cursorPos = e.target.selectionStart ?? newContent.length
+    lastCommentCursorPos.current = cursorPos
+
+    const textBeforeCursor = newContent.slice(0, cursorPos)
+    const lastAtIndex = textBeforeCursor.lastIndexOf('@')
+
+    if (lastAtIndex !== -1) {
+      const textAfterAt = textBeforeCursor.slice(lastAtIndex + 1)
+      const hasSpace = textAfterAt.includes(' ')
+
+      if (!hasSpace && textAfterAt.length >= 0) {
+        setMentionSearchQuery(textAfterAt)
+        setShowMentionPicker(true)
+        setActiveComposer(id || 'main')
+
+        // Position calculation
+        const inputRef = type === 'main' ? commentInputRef : { current: e.target }
+        const boxRef = commentBoxRef // Relative to this or the group
+
+        if (inputRef.current && boxRef.current) {
+          const boxRect = boxRef.current.getBoundingClientRect()
+          const selection = window.getSelection()
+          let positioned = false
+
+          if (selection.rangeCount > 0) {
+            try {
+              const range = selection.getRangeAt(0).cloneRange()
+              const rects = range.getClientRects()
+              if (rects.length > 0) {
+                const rect = rects[0]
+                setMentionPickerPosition({
+                  top: rect.bottom - boxRect.top + 5,
+                  left: Math.min(rect.left - boxRect.left, boxRect.width - 320)
+                })
+                positioned = true
+              }
+            } catch (err) { }
+          }
+          if (!positioned) {
+            const editorRect = inputRef.current.getBoundingClientRect()
+            setMentionPickerPosition({
+              top: editorRect.bottom - boxRect.top + 5,
+              left: 48
+            })
+          }
+        }
+      } else {
+        setShowMentionPicker(false)
+      }
+    } else {
+      setShowMentionPicker(false)
+    }
+  }
+
+  const handleMentionSelect = (selectedUser) => {
+    const currentContent = activeComposer === 'main' ? commentInput : replyContent
+    const cursorPos = lastCommentCursorPos.current || currentContent.length
+    const textBeforeCursor = currentContent.slice(0, cursorPos)
+    const lastAtIndex = textBeforeCursor.lastIndexOf('@')
+
+    if (lastAtIndex !== -1) {
+      const beforeAt = currentContent.slice(0, lastAtIndex)
+      const afterCursor = currentContent.slice(cursorPos)
+      const newContent = beforeAt + '@' + selectedUser.username + ' ' + afterCursor
+      if (activeComposer === 'main') setCommentInput(newContent)
+      else setReplyContent(newContent)
+    }
+    setShowMentionPicker(false)
+  }
+
+  const handleCopyLink = () => { navigator.clipboard.writeText(`${window.location.origin}/post/${post.id}`); setToast(true); setTimeout(() => setToast(false), 2000) }
+
+  const renderCommentThread = (comment, depth = 0, isLast = false) => {
+    const replies = comments.filter(c => c.parent_id === comment.id);
+    const hasReplies = replies.length > 0;
+    const isCollapsed = collapsedThreads.includes(comment.id);
+
+    return (
+      <div key={comment.id} className={depth === 0 ? "border-b border-border-dark relative thread-container" : 'comments-slide ml-12 py-3 bg-surface border-b-0 relative'} style={depth > 0 ? { paddingBottom: isLast ? '16px' : '12px' } : {}} onClick={e => e.stopPropagation()}>
+        {hasReplies && (
+          <div
+            className={`thread-line-stem absolute w-[2px] bg-thread z-[1] ${isCollapsed ? 'thread-replies-collapsed' : ''}`}
+            style={{
+              left: depth === 0 ? '14px' : '16px',
+              top: depth === 0 ? '30px' : '20px',
+              // Keep the stem aligned with reply avatars instead of extending
+              // through the full thread block (composer + trailing spacing).
+              bottom: depth === 0 ? '86px' : '72px'
+            }}
+            onClick={() => toggleCollapse(comment.id)}
+            title="Collapse thread"
+          />
+        )}
+        {depth > 0 && (
+          <div
+            className="thread-branch-elbow absolute top-[10px] h-[24px] border-l-2 border-b-2 border-thread rounded-bl-xl z-[1] cursor-pointer"
+            style={{
+              left: depth === 1 ? '-34px' : '-32px',
+              width: depth === 1 ? '34px' : '32px'
+            }}
+            onClick={() => toggleCollapse(comment.id)}
+            title="Collapse thread"
+          />
+        )}
+
+        <div id={`comment-${comment.id}`} className={depth === 0 ? "py-4 bg-surface relative border-b-0" : ""} style={depth === 0 ? { paddingBottom: (replies.length > 0 || replyingTo === comment.id) ? '12px' : '16px' } : {}}>
+          <div className="flex justify-between mb-1.5 items-center">
+            <div className="flex items-center gap-2 relative z-[2] cursor-pointer" onClick={() => navigate(`/profile/${comment.username}`)}>
+              <div className={`relative z-[2] ${depth > 0 ? 'w-8 h-8' : ''}`}>
+                {comment.profiles?.avatar_url
+                  ? <img src={comment.profiles.avatar_url} className={`${depth > 0 ? 'w-8 h-8' : 'w-7 h-7'} rounded-full object-cover block`} alt="" />
+                  : <div className={`${depth > 0 ? 'w-8 h-8 flex items-center justify-center text-[0.8rem]' : 'w-7 h-7 flex items-center justify-center text-[0.75rem]'} rounded-full bg-primary text-white`}>{comment.username?.charAt(0)}</div>}
+              </div>
+              <div className={depth > 0 ? "flex flex-col" : ""}><span className="font-bold text-[0.85rem] text-text-main">{comment.profiles?.display_name || comment.username}</span><span className={`text-[0.75rem] text-text-dim ${depth === 0 ? 'ml-1' : ''}`}>@{comment.username}</span></div>
+            </div>
+          </div>
+          <div className={depth > 0 ? "ml-10" : "ml-12"}>
+            {editingComment === comment.id ? (
+              <div className="mt-1 mb-2">
+                <textarea
+                  className="w-full bg-white/5 border border-primary rounded-xl p-3 text-text-main text-[0.9rem] resize-none outline-none focus:border-primary focus:bg-white/10 transition-all"
+                  rows={3}
+                  value={editCommentText}
+                  onChange={e => setEditCommentText(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleEditComment(comment.id) } if (e.key === 'Escape') { setEditingComment(null) } }}
+                  autoFocus
+                />
+                <div className="flex gap-2 mt-2">
+                  <button className="py-1.5 px-4 bg-primary text-white border-none rounded-xl text-[0.82rem] font-bold cursor-pointer hover:bg-primary-hover transition-colors" onClick={() => handleEditComment(comment.id)}>Save</button>
+                  <button className="py-1.5 px-4 bg-transparent text-text-dim border border-border-dark rounded-xl text-[0.82rem] cursor-pointer hover:bg-white/5 transition-colors" onClick={() => setEditingComment(null)}>Cancel</button>
+                </div>
+              </div>
+            ) : (
+              <div className={`text-[${depth > 0 ? '0.85rem' : '0.9rem'}] text-text-reply leading-relaxed`}>
+                {renderContent(comment.content, navigate)}
+                {comment.edited && <span className="text-text-dim text-[0.7rem] ml-1.5 italic">(edited)</span>}
+              </div>
+            )}
+            {comment.image_url && <img src={comment.image_url} className="mt-2 max-w-[60%] max-h-[150px] object-contain rounded-lg cursor-pointer" alt="" onClick={() => setViewingImage(comment.image_url)} />}
+            <div className="flex gap-4 mt-2 items-center">
+              <button className={`bg-none border-none cursor-pointer text-[0.8rem] flex items-center gap-1 transition-colors ${comment.comment_likes?.some(l => l.user_id === user?.id) ? 'text-[#e0245e]' : 'text-text-dim'} ${animatingCommentId === comment.id ? 'heart-bounce' : ''}`} onClick={() => handleCommentLike(comment)}>
+                <i className={`fa-${comment.comment_likes?.some(l => l.user_id === user?.id) ? 'solid' : 'regular'} fa-heart`}></i> <span className={comment.comment_likes?.some(l => l.user_id === user?.id) ? 'font-bold' : 'font-normal'}>{comment.comment_likes?.length || 0}</span>
+              </button>
+              <button className="bg-none border-none cursor-pointer text-[0.8rem] text-text-dim flex items-center gap-1 hover:text-primary transition-colors" onClick={() => {
+                setReplyingTo(replyingTo === comment.id ? null : comment.id);
+                setReplyContent(comment.username === user?.username ? '' : `@${comment.username} `);
+                if (collapsedThreads.includes(comment.id)) { toggleCollapse(comment.id); }
+              }}><i className="fa-solid fa-reply"></i></button>
+              {user?.id === comment.user_id && (
+                <button
+                  className="bg-none border-none cursor-pointer text-[0.78rem] text-text-dim flex items-center gap-1 hover:text-primary transition-colors"
+                  title="Edit comment"
+                  onClick={() => { setEditingComment(comment.id); setEditCommentText(comment.content) }}
+                >
+                  <i className="fa-solid fa-pen"></i>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className={`thread-replies-wrapper ${isCollapsed ? 'thread-replies-collapsed' : ''}`}>
+          {replyingTo === comment.id && (
+            <div className="ml-12 relative bg-none border-none py-3 px-0">
+              <div
+                className="thread-branch-elbow absolute top-[18px] h-[24px] border-l-2 border-b-2 border-thread rounded-bl-xl z-[1] cursor-pointer"
+                style={{
+                  left: depth === 0 ? '-34px' : '-32px',
+                  width: depth === 0 ? '34px' : '32px'
+                }}
+                onClick={() => toggleCollapse(comment.id)}
+                title="Collapse thread"
+              />
+              <div className="pill-input-outer relative">
+                <button className="circle-action-btn" onClick={() => setShowMediaMenu(showMediaMenu === comment.id ? null : comment.id)}>
+                  <i className={`fa-solid ${showMediaMenu === comment.id ? 'fa-xmark' : 'fa-plus'}`}></i>
+                </button>
+
+                {showMediaMenu === comment.id && (
+                  <div className="media-menu-popover">
+                    <div className="media-menu-item" onClick={() => { commentFileRef.current.click(); setShowMediaMenu(null) }}>
+                      <i className="fa-regular fa-image"></i> Image
+                    </div>
+                    <div className="media-menu-item" onClick={() => { setShowCommentGifPicker(comment.id); setShowMediaMenu(null) }}>
+                      <i className="fa-solid fa-bolt"></i> GIF
+                    </div>
+                  </div>
+                )}
+
+                <div className="pill-input-container">
+                  <RichTextEditor placeholder="Start a new reply..." content={replyContent} onChange={(e) => handleComposerChange(e, 'reply', comment.id)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleComment(null, comment.id) } }} minHeight="36px" />
+                  <button
+                    className={`circle-action-btn ${(replyContent.trim() || commentImage || commentGifUrl) ? 'send-btn-pop' : 'send-btn-hide'}`}
+                    style={{ flexShrink: 0, backgroundColor: '#00BFA6', color: 'white', border: 'none', pointerEvents: (replyContent.trim() || commentImage || commentGifUrl) ? 'auto' : 'none' }}
+                    onClick={() => handleComment(null, comment.id)}
+                  >
+                    <i className="fa-solid fa-arrow-up"></i>
+                  </button>
+                </div>
+              </div>
+              {(commentImagePreview || commentGifUrl) && (
+                <div className="ml-12 mt-2.5">
+                  <div className="relative w-fit rounded-xl overflow-hidden border border-border-dark">
+                    <img src={commentImagePreview || commentGifUrl} className="max-w-[200px] max-h-[150px] block" alt="Preview" />
+                    <button
+                      onClick={() => { setCommentImage(null); setCommentImagePreview(null); setCommentGifUrl(null) }}
+                      className="absolute top-2 right-2 bg-black/70 text-white border-none rounded-full w-6 h-6 cursor-pointer flex items-center justify-center"
+                    >
+                      <i className="fa-solid fa-xmark"></i>
+                    </button>
+                  </div>
+                </div>
+              )}
+              {showCommentGifPicker === comment.id && (
+                <div className="mt-2.5">
+                  <GifPicker
+                    onSelect={(url) => { setCommentGifUrl(url); setShowCommentGifPicker(false) }}
+                    onClose={() => setShowCommentGifPicker(null)}
+                  />
+                </div>
+              )}
+              <div className="flex gap-2 mt-2.5 ml-12">
+                <button className="bg-none border-none text-text-dim py-1 px-2 text-[0.75rem] cursor-pointer hover:text-red-500 transition-colors" onClick={() => setReplyingTo(null)}>Cancel</button>
+              </div>
+            </div>
+          )}
+
+          <div className="relative mt-3">
+            {replies.map((reply, rIdx) => renderCommentThread(reply, depth + 1, rIdx === replies.length - 1))}
+          </div>
+        </div>
+
+        {depth === 0 && isCollapsed && replies.length > 0 && (
+          <div style={{ marginLeft: '48px', padding: '10px 0' }}>
+            <div className="replies-collapsed-badge" onClick={() => toggleCollapse(comment.id)}>
+              View {replies.length} {replies.length === 1 ? 'reply' : 'replies'}
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+
+  return (
+    <div className="bg-surface rounded-xl p-5 border border-border-dark mb-0 relative" id={`post-${post.id}`}>
+      {toast && <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-primary text-white py-3 px-6 rounded-xl z-[99999] flex items-center gap-2"><i className="fa-solid fa-check"></i> Link copied</div>}
+
+      {/* Navigation Wrapper - Clicks here go to the post page */}
+      <div onClick={onNavigate} className="cursor-pointer">
+        <div className="flex justify-between mb-3 items-center">
+          <div className="flex items-center gap-2.5 cursor-pointer" onClick={(e) => { e.stopPropagation(); navigate(`/profile/${post.username}`) }}>
+            <div className="shrink-0">{authorAvatarUrl ? <img src={authorAvatarUrl} className="w-[38px] h-[38px] rounded-full object-cover border-2 border-border-dark" alt="" /> : <div className="w-[38px] h-[38px] rounded-full bg-primary flex items-center justify-center text-base font-bold text-white">{post.username?.charAt(0)}</div>}</div>
+            <div><div className="font-bold text-text-main text-[0.95rem]">{authorDisplayName || post.username}</div><div className="text-primary text-[0.78rem]">@{post.username}</div></div>
+          </div>
+          <div className="relative" ref={menuRef}>
+            <button className="bg-none border-none cursor-pointer text-text-dim text-xl" onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}>
+              <i className="fa-solid fa-ellipsis"></i>
+            </button>
+            {showMenu && (
+              <div className="absolute right-0 top-7 bg-surface border border-border-dark rounded-xl p-1.5 z-[999] min-w-[150px]" onClick={e => e.stopPropagation()}>
+                <button className="flex items-center gap-2 w-full py-2 px-3 bg-none border-none cursor-pointer text-text-main text-[0.9rem] rounded-md hover:bg-primary-dim" onClick={handleCopyLink}><i className="fa-solid fa-link"></i> Copy Link</button>
+                {user?.id === post.user_id && (
+                  <>
+                    <button className="flex items-center gap-2 w-full py-2 px-3 bg-none border-none cursor-pointer text-text-main text-[0.9rem] rounded-md hover:bg-primary-dim" onClick={() => { setEditPostText(post.content); setEditingPost(true); setShowMenu(false) }}><i className="fa-solid fa-pen"></i> Edit</button>
+                    <button className="flex items-center gap-2 w-full py-2 px-3 bg-none border-none cursor-pointer text-red-500 text-[0.9rem] rounded-md hover:bg-red-500/10" onClick={() => setShowDeleteModal(true)}><i className="fa-solid fa-trash"></i> Delete</button>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="text-base leading-relaxed text-text-main mb-1">{renderContent(post.content, navigate, highlightQuery)}{post.edited && <span className="text-text-dim text-[0.72rem] ml-1.5 italic">(edited)</span>}</div>
+        {post.image_url && (
+          <div className="mt-3 overflow-hidden max-h-[500px] flex justify-center bg-black/5 flex justify-center">
+            <img src={post.image_url} className="max-w-full max-h-[500px] w-auto h-auto object-contain cursor-pointer" alt="" onClick={(e) => { e.stopPropagation(); setViewingImage(post.image_url) }} />
+          </div>
+        )}
+      </div>
+
+      <div className="flex gap-2 mt-4 items-center border-t border-border-dark pt-3" onClick={(e) => { e.stopPropagation(); toggleComments(); }}>
+        <button className={`bg-none border-none cursor-pointer text-[0.9rem] py-1.5 px-3 rounded-lg flex items-center gap-1.5 hover:bg-primary-dim transition-colors ${likes.some(l => l.user_id === user?.id) ? 'text-[#e0245e]' : 'text-text-dim'} ${heartAnim ? 'heart-bounce' : ''}`} onClick={(e) => { e.stopPropagation(); handleLike(); }}><i className={`fa-${likes.some(l => l.user_id === user?.id) ? 'solid' : 'regular'} fa-heart`}></i> <span>{likes.length}</span></button>
+        <button className={`bg-none border-none cursor-pointer text-[0.9rem] py-1.5 px-3 rounded-lg flex items-center gap-1.5 hover:bg-primary-dim transition-colors ${showComments ? 'text-primary' : 'text-text-dim'}`} onClick={(e) => { e.stopPropagation(); toggleComments(); }}><i className="fa-solid fa-reply"></i> <span>{comments.length}</span></button>
+      </div>
+      {(showComments || closingComments) && (
+        <div className={`mt-4 ${closingComments ? 'comments-slide-up' : 'comments-slide'}`} onClick={e => e.stopPropagation()}>
+          <input type="file" ref={commentFileRef} onChange={handleCommentFileChange} className="hidden" accept="image/*" />
+
+
+          {comments.filter(c => !c.parent_id).map(comment => renderCommentThread(comment))}
+
+          <div className="mt-8 relative" ref={commentBoxRef}>
+            <div className="flex items-center gap-2.5 w-full relative">
+              <button className="w-8 h-8 text-[0.9rem] rounded-full border border-white/10 bg-none text-primary flex items-center justify-center cursor-pointer hover:bg-primary/10 hover:border-primary transition-all" onClick={() => setShowMediaMenu(showMediaMenu === 'main' ? null : 'main')}>
+                <i className={`fa-solid ${showMediaMenu === 'main' ? 'fa-xmark' : 'fa-plus'}`}></i>
+              </button>
+
+              {showMediaMenu === 'main' && (
+                <div className="absolute bottom-[calc(100%+10px)] left-0 bg-surface border border-border-dark rounded-xl p-2 flex flex-col gap-1 shadow-[0_4px_20px_rgba(0,0,0,0.3)] z-[1000] animate-[mediaMenuPop_0.25s_cubic-bezier(0.175,0.885,0.32,1.275)]">
+                  <div className="flex items-center gap-2.5 py-2 px-3 rounded-lg text-text-main cursor-pointer hover:bg-primary/10 hover:text-primary transition-colors text-[0.9rem] whitespace-nowrap" onClick={() => { commentFileRef.current.click(); setShowMediaMenu(null) }}>
+                    <i className="fa-regular fa-image"></i> Image
+                  </div>
+                  <div className="flex items-center gap-2.5 py-2 px-3 rounded-lg text-text-main cursor-pointer hover:bg-primary/10 hover:text-primary transition-colors text-[0.9rem] whitespace-nowrap" onClick={() => { setShowCommentGifPicker('main'); setShowMediaMenu(null) }}>
+                    <i className="fa-solid fa-bolt"></i> GIF
+                  </div>
+                </div>
+              )}
+
+              <div className="flex-1 bg-white/5 border border-white/10 rounded-[25px] py-1 px-1.5 pl-4 flex items-center gap-2 relative transition-all focus-within:bg-white/10 focus-within:border-primary">
+                <RichTextEditor textareaRef={commentInputRef} placeholder="Start a new message..." content={commentInput} onChange={(e) => handleComposerChange(e, 'main')} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleComment() } }} minHeight="40px" />
+                <button
+                  className={`w-8 h-8 text-[0.9rem] rounded-full border-none flex items-center justify-center cursor-pointer transition-all shrink-0 bg-primary text-white ${(commentInput.trim() || commentImage || commentGifUrl) ? 'scale-100 opacity-100 animate-[popIn_0.3s_cubic-bezier(0.175,0.885,0.32,1.275)]' : 'scale-0 opacity-0 pointer-events-none'}`}
+                  onClick={handleComment}
+                  disabled={commentSending}
+                >
+                  <i className="fa-solid fa-arrow-up"></i>
+                </button>
+              </div>
+            </div>
+            {(commentImagePreview || commentGifUrl) && (
+              <div className="mt-2.5 ml-12">
+                <div className="relative w-fit rounded-xl overflow-hidden border border-border-dark">
+                  <img src={commentImagePreview || commentGifUrl} className="max-w-[200px] max-h-[150px] block" alt="Preview" />
+                  <button
+                    onClick={() => { setCommentImage(null); setCommentImagePreview(null); setCommentGifUrl(null) }}
+                    className="absolute top-2 right-2 bg-black/70 text-white border-none rounded-full w-6 h-6 cursor-pointer flex items-center justify-center"
+                  >
+                    <i className="fa-solid fa-xmark"></i>
+                  </button>
+                </div>
+              </div>
+            )}
+            {showCommentGifPicker === 'main' && (
+              <div className="mt-2.5">
+                <GifPicker
+                  onSelect={(url) => { setCommentGifUrl(url); setShowCommentGifPicker(false) }}
+                  onClose={() => setShowCommentGifPicker(null)}
+                />
+              </div>
+            )}
+            {showMentionPicker && (
+              <UserMentionPicker
+                onSelect={handleMentionSelect}
+                onClose={() => setShowMentionPicker(false)}
+                searchQuery={mentionSearchQuery}
+                position={{ top: mentionPickerPosition.top, left: mentionPickerPosition.left }}
+                currentUserId={user?.id}
+              />
+            )}
+          </div>
+        </div>
+      )}
+      {viewingImage && <div className="fixed inset-0 bg-black/85 z-[99999] flex items-center justify-center" onClick={() => setViewingImage(null)}><div className="relative"><button className="absolute -top-10 right-0 text-white cursor-pointer bg-none border-none text-xl" onClick={() => setViewingImage(null)}>X</button><img src={viewingImage} className="max-w-[90vw] max-h-[85vh] rounded-lg" alt="" /></div></div>}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999]">
+          <div className="bg-surface rounded-2xl p-6 border border-border-dark w-[300px]">
+            <h3 className="font-bold text-xl mb-4">Delete Post?</h3>
+            <p className="text-text-dim mb-6 text-sm">This action cannot be undone and will remove the post from your timeline.</p>
+            <div className="flex justify-end gap-3">
+              <button className="py-2 px-4 bg-transparent text-text-dim border border-border-dark rounded-lg cursor-pointer hover:bg-white/5 transition-colors" onClick={() => setShowDeleteModal(false)}>Cancel</button>
+              <button className="py-2 px-4 bg-red-500 text-white rounded-lg cursor-pointer hover:bg-red-600 transition-colors" onClick={() => onDelete(post.id)}>Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {editingPost && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999]" onClick={() => setEditingPost(false)}>
+          <div className="bg-surface rounded-2xl p-6 border border-border-dark w-[520px] max-w-[95vw]" onClick={e => e.stopPropagation()}>
+            <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><i className="fa-solid fa-pen text-primary"></i> Edit Post</h3>
+            <textarea
+              className="w-full bg-white/5 border border-border-dark rounded-xl p-4 text-text-main text-[0.95rem] resize-none outline-none focus:border-primary focus:bg-white/8 transition-all min-h-[120px]"
+              value={editPostText}
+              onChange={e => setEditPostText(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Escape') setEditingPost(false) }}
+              autoFocus
+            />
+            <div className="flex justify-between items-center mt-3">
+              <span className={`text-[0.82rem] ${editPostText.length > 260 ? 'text-red-500 font-bold' : 'text-text-dim'}`}>{editPostText.length}/280</span>
+              <div className="flex gap-2">
+                <button className="py-2 px-5 bg-transparent text-text-dim border border-border-dark rounded-xl text-[0.88rem] cursor-pointer hover:bg-white/5 transition-colors" onClick={() => setEditingPost(false)}>Cancel</button>
+                <button className="py-2 px-5 bg-primary text-white border-none rounded-xl text-[0.88rem] font-bold cursor-pointer hover:bg-primary-hover transition-colors disabled:opacity-50" onClick={handleEditPost} disabled={!editPostText.trim() || editPostText.length > 280}>Save</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+
+
