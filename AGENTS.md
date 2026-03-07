@@ -27,6 +27,11 @@ Run commands from each package directory.
 - Utilities and backend route modules: lowercase descriptive names (for example `profileCache.js`, `routes/posts.js`).
 - Keep route handlers focused by domain; place shared client logic in `client/src/utils`.
 - Linting is configured in `client/eslint.config.js` (ESLint 9 + React Hooks + React Refresh).
+- **Comment Thread Implementation**:
+  - Always enforce "one level at a time" expansion.
+  - Recursive state reset is mandatory when collapsing any branch.
+  - Measure thread lines dynamically after DOM paint (using double rAF) to ensure they stop at the last direct child only.
+  - Avoid layout-affecting transitions (like `max-height` or `transform`) on collapsible wrappers as they interfere with accurate DOM measurement.
 
 ## Testing Guidelines
 There is no formal unit-test framework configured yet.

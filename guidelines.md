@@ -57,6 +57,12 @@
 - Match local style in edited file (many files use 2-space indentation and semicolon-light style).
 - Prefer explicit cleanup in `useEffect` for subscriptions/listeners.
 - Use optimistic UI carefully and roll back on request failure.
+- **Thread & Branching Patterns (New March 2026)**:
+  - Expansion: Branches must expand one level at a time. Expanding a parent reveals only direct children; deep descendants remain hidden until manually toggled.
+  - Reset: Collapsing a branch must recursively reset all descendant nodes to their default collapsed state in the internal state (`collapsedThreads`).
+  - Global Reset: Closing the entire comment section must fully wipe all thread expansion states to start fresh on reopening.
+  - Tree Lines: Vertical connector lines (stems) must terminate at the vertex/avatar of the last visible direct child. Use `ResizeObserver` + double `requestAnimationFrame` for accurate measurement after layout updates.
+  - Style: Use `.children` class for reply containers and strictly scope selectors (e.g., `:scope > .children`) to maintain independent level visibility.
 
 ### Development Notes
 - Frontend commands (`client/`): `npm run dev`, `npm run build`, `npm run lint`, `npm run preview`.
