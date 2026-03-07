@@ -148,6 +148,101 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
     }
   }, [])
 
+  // On initial load (and only when new comment IDs appear), add any comment-with-replies
+  // that isn't already tracked. Uses additive state so user-expanded branches are NOT
+  // reset when a realtime comment arrives and re-triggers this effect  // On first load, all branches start collapsed.
+  useEffect(() => {
+    if (!comments.length) return
+    const idsWithReplies = comments
+      .filter(c => comments.some(r => r.parent_id === c.id))
+      .map(c => c.id)
+    setCollapsedThreads(prev => {
+      // Additive: only add IDs that aren't already there to avoid reset/flicker
+      const toAdd = idsWithReplies.filter(id => !prev.includes(id))
+      return toAdd.length > 0 ? [...prev, ...toAdd] : prev
+    })
+  }, [comments.length > 0]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const fixLines = (postEl) => {
+    const _forceReflow = postEl.offsetHeight;
+
+    postEl.querySelectorAll('.thread-line-stem').forEach(stem => {
+      const container = stem.parentElement
+      if (!container) return
+
+      // Use the user-suggested term '.children' for the container
+      const childrenContainer = container.querySelector(':scope > .children')
+      if (!childrenContainer) return
+
+      const isCollapsed = childrenContainer.classList.contains('thread-replies-collapsed') || childrenContainer.offsetHeight === 0;
+
+      if (isCollapsed) {
+        stem.style.height = '0px'
+        stem.style.opacity = '0'
+        return
+      }
+
+      // MEASUREMENT RULE: Reach only to the top edge of the last direct child only.
+      // We use :scope > div > .comments-slide to guarantee we never measure spanning grandchildren.
+      const slides = Array.from(childrenContainer.querySelectorAll(':scope > div > .comments-slide'))
+      if (!slides.length) {
+        stem.style.height = '0px'
+        stem.style.opacity = '0'
+        return
+      }
+
+      const lastSlide = slides[slides.length - 1]
+      const lastElbow = lastSlide.querySelector(':scope > .thread-branch-elbow')
+      const targetY = lastElbow 
+        ? lastElbow.getBoundingClientRect().top + lastElbow.getBoundingClientRect().height / 2
+        : lastSlide.getBoundingClientRect().top + 22
+      
+      const containerTop = container.getBoundingClientRect().top
+      const stemTopOffset = parseFloat(stem.style.top) || 30
+      const height = Math.ceil(targetY - containerTop - stemTopOffset) + 1
+
+      if (height > 0) {
+        stem.style.height = height + 'px'
+        stem.style.opacity = '1'
+        stem.style.bottom = 'auto'
+      }
+    })
+  }
+
+  useEffect(() => {
+    const postEl = document.getElementById(`post-${post.id}`)
+    if (!postEl) return
+
+    let rafId
+    let timerId
+
+    const schedule = () => {
+      cancelAnimationFrame(rafId)
+      // DOUBLE rAF: Wait two frames to guarantee the browser has painted the 
+      // result of the state change / toggle before measuring.
+      rafId = requestAnimationFrame(() => {
+        rafId = requestAnimationFrame(() => fixLines(postEl))
+      })
+    }
+
+    // Trigger on mount and state changes
+    schedule()
+
+    // Re-measure whenever layout shifts occur (images loading, content expanding)
+    const obs = new ResizeObserver(() => {
+      // Small debounce/rAF to ensure we don't spam measurements during layout
+      schedule()
+    })
+    
+    postEl.querySelectorAll('.thread-replies-wrapper, .comments-slide, img').forEach(el => obs.observe(el))
+
+    return () => {
+      cancelAnimationFrame(rafId)
+      if (timerId) clearTimeout(timerId)
+      obs.disconnect()
+    }
+  }, [comments, collapsedThreads, replyingTo, post.id])
+
   const toggleComments = () => {
     if (showComments) {
       if (closingComments) return
@@ -156,6 +251,15 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
       closeCommentsTimerRef.current = setTimeout(() => {
         setShowComments(false)
         setClosingComments(false)
+        
+        // Reset the entire thread tree to the default collapsed state on close.
+        // This ensures that when the comments are reopened, it starts fresh 
+        // with only top-level comments visible.
+        const currentComments = commentsRef.current || []
+        const idsWithReplies = currentComments
+          .filter(c => currentComments.some(r => r.parent_id === c.id))
+          .map(c => c.id)
+        setCollapsedThreads(idsWithReplies)
       }, 220)
       return
     }
@@ -164,7 +268,29 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
     setShowComments(true)
   }
 
-  const toggleCollapse = (id) => setCollapsedThreads(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+  // Collect all descendant comment IDs (replies of replies, recursively)
+  const getAllDescendantIds = (parentId, allComments) => {
+    const directChildren = allComments.filter(c => c.parent_id === parentId)
+    return directChildren.flatMap(child => [child.id, ...getAllDescendantIds(child.id, allComments)])
+  }
+
+  const toggleCollapse = (id) => {
+    // Use commentsRef.current (always fresh) instead of the render-closure 'comments'
+    // so descendant lookup is never stale when the updater runs asynchronously.
+    const latestComments = commentsRef.current
+    setCollapsedThreads(prev => {
+      if (prev.includes(id)) {
+        // EXPAND: remove only this node — every child stays in its own collapsed state
+        return prev.filter(x => x !== id)
+      } else {
+        // COLLAPSE: this node + every descendant at every depth is forced back to collapsed.
+        // When the parent expands again it will show only direct children, all collapsed.
+        const descendants = getAllDescendantIds(id, latestComments)
+        const extra = [id, ...descendants].filter(x => !prev.includes(x))
+        return extra.length > 0 ? [...prev, ...extra] : prev
+      }
+    })
+  }
 
   const handleCommentFileChange = (e) => {
     const file = e.target.files?.[0]
@@ -373,10 +499,8 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
             className={`thread-line-stem absolute w-[2px] bg-thread z-[1] ${isCollapsed ? 'thread-replies-collapsed' : ''}`}
             style={{
               left: depth === 0 ? '14px' : '16px',
-              top: depth === 0 ? '30px' : '20px',
-              // Keep the stem aligned with reply avatars instead of extending
-              // through the full thread block (composer + trailing spacing).
-              bottom: depth === 0 ? '86px' : '72px'
+              top: depth === 0 ? '30px' : '20px'
+              // height is set by the ResizeObserver useEffect after DOM layout
             }}
             onClick={() => toggleCollapse(comment.id)}
             title="Collapse thread"
@@ -450,7 +574,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
           </div>
         </div>
 
-        <div className={`thread-replies-wrapper ${isCollapsed ? 'thread-replies-collapsed' : ''}`}>
+        <div className={`children ${isCollapsed ? 'thread-replies-collapsed' : ''}`}>
           {replyingTo === comment.id && (
             <div className="ml-12 relative bg-none border-none py-3 px-0">
               <div
@@ -521,9 +645,10 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
           </div>
         </div>
 
-        {depth === 0 && isCollapsed && replies.length > 0 && (
-          <div style={{ marginLeft: '48px', padding: '10px 0' }}>
+        {isCollapsed && replies.length > 0 && (
+          <div style={{ marginLeft: depth === 0 ? '48px' : '40px', padding: '8px 0' }}>
             <div className="replies-collapsed-badge" onClick={() => toggleCollapse(comment.id)}>
+              <i className="fa-solid fa-chevron-down mr-1.5"></i>
               View {replies.length} {replies.length === 1 ? 'reply' : 'replies'}
             </div>
           </div>

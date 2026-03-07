@@ -1,5 +1,5 @@
 require('dotenv').config({ path: '../.env' });
-const { supabase } = require('./supabase');
+const supabase = require('./supabase');
 
 async function run() {
     console.log("Checking profiles schema...");
