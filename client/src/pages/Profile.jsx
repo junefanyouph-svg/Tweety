@@ -7,6 +7,7 @@ import { PostSkeleton, ProfileSkeleton } from '../components/Skeleton'
 import { setCache, getCache, invalidateCache } from '../utils/cache'
 import { invalidateProfile } from '../utils/profileCache'
 import AvatarCropper from '../components/AvatarCropper'
+import PullToRefresh from '../components/PullToRefresh'
 
 const API_URL = import.meta.env.VITE_API_URL
 
@@ -227,6 +228,14 @@ export default function Profile() {
 
   const isOwnProfile = user?.user_metadata?.username === username
 
+  const handleRefresh = async () => {
+    if (!profile) return
+    await Promise.all([
+      fetchProfileStats(username, user),
+      fetchPosts(username),
+    ])
+  }
+
   if (loading) return (
     <div className="max-w-[620px] mx-auto px-3 w-full box-border">
       <ProfileSkeleton />
@@ -238,7 +247,8 @@ export default function Profile() {
   )
 
   return (
-    <div className="max-w-[620px] mx-auto px-3 w-full box-border pb-8">
+    <PullToRefresh onRefresh={handleRefresh}>
+      <div className="max-w-[620px] mx-auto px-3 w-full box-border pb-8">
       {/* Profile Card */}
       <div className="bg-surface rounded-2xl p-6 my-5 border border-border-dark flex gap-5 items-start max-sm:flex-col">
         <div
@@ -412,5 +422,6 @@ export default function Profile() {
         </div>
       )}
     </div>
+    </PullToRefresh>
   )
 }

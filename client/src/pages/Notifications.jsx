@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { styles } from '../styles/Notifications.styles'
+import PullToRefresh from '../components/PullToRefresh'
 
 const API_URL = import.meta.env.VITE_API_URL
 
@@ -111,8 +112,16 @@ export default function Notifications() {
     }
   }
 
+  const handleRefresh = async () => {
+    if (user) {
+      await fetchNotifications(user.id)
+      await markAllRead(user.id)
+    }
+  }
+
   return (
-    <div style={styles.container}>
+    <PullToRefresh onRefresh={handleRefresh}>
+      <div style={styles.container}>
       <style>{`
         @keyframes notif-skeleton {
           0% { background-position: 200% 0; }
@@ -193,5 +202,6 @@ export default function Notifications() {
         </div>
       )}
     </div>
+    </PullToRefresh>
   )
 }

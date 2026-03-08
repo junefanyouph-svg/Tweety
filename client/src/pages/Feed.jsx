@@ -8,6 +8,7 @@ import GifPicker from '../components/GifPicker'
 import UserMentionPicker from '../components/UserMentionPicker'
 import RichTextEditor from '../components/RichTextEditor'
 import { setCache, getCache, invalidateCache } from '../utils/cache'
+import PullToRefresh from '../components/PullToRefresh'
 
 const API_URL = import.meta.env.VITE_API_URL
 
@@ -334,7 +335,8 @@ export default function Feed() {
   }
 
   return (
-    <div className="max-w-[620px] mx-auto px-3 w-full box-border">
+    <PullToRefresh onRefresh={fetchPosts}>
+      <div className="max-w-[620px] mx-auto px-3 w-full box-border">
 
       {/* Compose Box */}
       <div className="bg-surface rounded-2xl p-4 my-3 border border-border-dark relative transition-all duration-200 focus-within:border-primary focus-within:shadow-[0_0_0_3px_rgba(0,191,166,0.22)]" ref={composeBoxRef}>
@@ -457,6 +459,7 @@ export default function Feed() {
         }
       </div>
     </div>
+    </PullToRefresh>
   )
 }
 
