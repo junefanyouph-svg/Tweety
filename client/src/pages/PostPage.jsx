@@ -2,9 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { supabase } from '../supabase'
 import PostCard from '../components/PostCard'
-
-
-const API_URL = import.meta.env.VITE_API_URL
+import { API_URL } from '../utils/apiUrl'
 
 export default function PostPage() {
   const { id } = useParams()

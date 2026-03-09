@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
 import GifPicker from './GifPicker'
@@ -7,8 +8,7 @@ import { getCache, setCache, invalidateCache } from '../utils/cache'
 import { getProfile } from '../utils/profileCache'
 import RichTextEditor from './RichTextEditor'
 import { broadcastLike, broadcastComment, broadcastCommentLike } from '../utils/interactionsChannel'
-
-const API_URL = import.meta.env.VITE_API_URL
+import { API_URL } from '../utils/apiUrl'
 
 function escapeRegExp(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -64,6 +64,32 @@ const renderContent = (text, navigate, query = '') => {
   })
 }
 
+function ScopedConfirmDialog({ title, message, confirmLabel, onCancel, onConfirm, tone = 'danger' }) {
+  const confirmClassName = tone === 'danger'
+    ? 'bg-red-500 hover:bg-red-600'
+    : 'bg-primary hover:bg-primary-hover'
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[9999] bg-black/65 backdrop-blur-sm flex items-center justify-center"
+      onClick={onCancel}
+    >
+      <div
+        className="rounded-2xl border border-border-dark bg-surface p-6 shadow-[0_12px_40px_rgba(0,0,0,0.35)] w-[360px] max-w-[calc(100vw-32px)]"
+        onClick={e => e.stopPropagation()}
+      >
+        <h3 className="mb-3 text-lg font-bold text-text-main">{title}</h3>
+        <p className="mb-5 text-sm text-text-dim leading-relaxed">{message}</p>
+        <div className="flex justify-end gap-3">
+          <button className="cursor-pointer rounded-xl border border-border-dark bg-transparent px-5 py-2.5 text-[0.9rem] font-medium text-text-dim transition-all hover:bg-white/5" onClick={onCancel}>Cancel</button>
+          <button className={`cursor-pointer rounded-xl px-5 py-2.5 text-[0.9rem] font-bold text-white shadow-lg transition-all active:scale-95 ${confirmClassName}`} onClick={onConfirm}>{confirmLabel}</button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  )
+}
+
 export default function PostCard({ post, user, onDelete, onNavigate, defaultOpenComments = false, highlightQuery = '' }) {
   const [likes, setLikes] = useState([])
   const [comments, setComments] = useState([])
@@ -98,6 +124,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
   const [editPostText, setEditPostText] = useState('')
   const [editingComment, setEditingComment] = useState(null)
   const [editCommentText, setEditCommentText] = useState('')
+  const [deleteDialog, setDeleteDialog] = useState(null)
   const likesRef = useRef([])
   const menuRef = useRef(null)
   const [hoveredComment, setHoveredComment] = useState(null)
@@ -193,10 +220,10 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
 
       const lastSlide = slides[slides.length - 1]
       const lastElbow = lastSlide.querySelector(':scope > .thread-branch-elbow')
-      const targetY = lastElbow 
+      const targetY = lastElbow
         ? lastElbow.getBoundingClientRect().top + lastElbow.getBoundingClientRect().height / 2
         : lastSlide.getBoundingClientRect().top + 22
-      
+
       const containerTop = container.getBoundingClientRect().top
       const stemTopOffset = parseFloat(stem.style.top) || 30
       const height = Math.ceil(targetY - containerTop - stemTopOffset) + 1
@@ -233,7 +260,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
       // Small debounce/rAF to ensure we don't spam measurements during layout
       schedule()
     })
-    
+
     postEl.querySelectorAll('.thread-replies-wrapper, .comments-slide, img').forEach(el => obs.observe(el))
 
     return () => {
@@ -251,7 +278,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
       closeCommentsTimerRef.current = setTimeout(() => {
         setShowComments(false)
         setClosingComments(false)
-        
+
         // Reset the entire thread tree to the default collapsed state on close.
         // This ensures that when the comments are reopened, it starts fresh 
         // with only top-level comments visible.
@@ -311,7 +338,11 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
       const newLikes = likesRef.current.filter(l => l.user_id !== userId)
       likesRef.current = newLikes
       setLikes(newLikes)
-      await supabase.from('likes').delete().eq('post_id', post.id).eq('user_id', userId)
+      fetch(`${API_URL}/likes`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ post_id: post.id, user_id: userId })
+      }).catch(err => console.error('Unlike API error:', err))
       await broadcastLike({ sender_id: userId, post_id: post.id, action: 'unlike' })
     } else {
       setHeartAnim(true); setTimeout(() => setHeartAnim(false), 400)
@@ -343,7 +374,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
 
   const handleEditComment = async (commentId) => {
     if (!editCommentText.trim()) return
-    const res = await fetch(`${API_URL}/comments/${commentId}`, {
+    const res = await fetch(`${API_URL}/replies/${commentId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ content: editCommentText })
@@ -358,6 +389,39 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
       setEditingComment(null)
       setEditCommentText('')
     }
+  }
+
+  const handleDeleteComment = async (commentId) => {
+    const res = await fetch(`${API_URL}/replies/${commentId}`, { method: 'DELETE' })
+
+    if (!res.ok) {
+      let message = 'Failed to delete comment'
+
+      try {
+        const errorData = await res.json()
+        message = errorData.error || message
+      } catch {
+        // Ignore parse failures and keep generic message.
+      }
+
+      alert(message)
+      return
+    }
+
+    setDeletingCommentId(null)
+    setDeleteDialog(null)
+    fetchFnRef.current.fetchComments()
+  }
+
+  const openDeleteDialog = (type, targetId) => {
+    const element = document.getElementById(targetId)
+    const rect = element?.getBoundingClientRect()
+
+    setDeleteDialog({
+      type,
+      anchorTop: rect ? rect.top + rect.height / 2 : window.innerHeight / 2,
+      anchorLeft: rect ? (rect.left + rect.width / 2) - 300 : (window.innerWidth / 2) - 100
+    })
   }
 
   const handleCommentLike = async (comment) => {
@@ -377,10 +441,18 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
     setComments(updatedComments)
 
     if (already) {
-      await supabase.from('comment_likes').delete().eq('comment_id', id).eq('user_id', user.id)
+      await fetch(`${API_URL}/comment_likes`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ comment_id: id, user_id: user.id })
+      })
       await broadcastCommentLike({ sender_id: user.id, comment_id: id, action: 'unlike' })
     } else {
-      await supabase.from('comment_likes').insert([{ comment_id: id, user_id: user.id }])
+      await fetch(`${API_URL}/comment_likes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ comment_id: id, user_id: user.id })
+      })
       await broadcastCommentLike({ sender_id: user.id, comment_id: id, action: 'like' })
     }
   }
@@ -393,7 +465,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
       const fileName = `comment-${user.id}-${Date.now()}`; const { data } = await supabase.storage.from('post-images').upload(fileName, commentImage)
       if (data) imageUrl = supabase.storage.from('post-images').getPublicUrl(fileName).data.publicUrl
     }
-    const res = await fetch(`${API_URL}/comments`, {
+    const res = await fetch(`${API_URL}/replies`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ post_id: post.id, user_id: user.id, username: user.user_metadata.username, content, image_url: imageUrl, parent_id })
@@ -518,7 +590,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
           />
         )}
 
-        <div id={`comment-${comment.id}`} className={depth === 0 ? "py-4 bg-surface relative border-b-0" : ""} style={depth === 0 ? { paddingBottom: (replies.length > 0 || replyingTo === comment.id) ? '12px' : '16px' } : {}}>
+        <div id={`comment-${comment.id}`} className={`${depth === 0 ? 'py-4 bg-surface border-b-0' : ''} relative`} style={depth === 0 ? { paddingBottom: (replies.length > 0 || replyingTo === comment.id) ? '12px' : '16px' } : {}}>
           <div className="flex justify-between mb-1.5 items-center">
             <div className="flex items-center gap-2 relative z-[2] cursor-pointer" onClick={() => navigate(`/profile/${comment.username}`)}>
               <div className={`relative z-[2] ${depth > 0 ? 'w-8 h-8' : ''}`}>
@@ -562,16 +634,36 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
                 if (collapsedThreads.includes(comment.id)) { toggleCollapse(comment.id); }
               }}><i className="fa-solid fa-reply"></i></button>
               {user?.id === comment.user_id && (
-                <button
-                  className="bg-none border-none cursor-pointer text-[0.78rem] text-text-dim flex items-center gap-1 hover:text-primary transition-colors"
-                  title="Edit comment"
-                  onClick={() => { setEditingComment(comment.id); setEditCommentText(comment.content) }}
-                >
-                  <i className="fa-solid fa-pen"></i>
-                </button>
+                <>
+                  <button
+                    className="bg-none border-none cursor-pointer text-[0.78rem] text-text-dim flex items-center gap-1 hover:text-primary transition-colors"
+                    title="Edit comment"
+                    onClick={() => { setEditingComment(comment.id); setEditCommentText(comment.content) }}
+                  >
+                    <i className="fa-solid fa-pen"></i>
+                  </button>
+                  <button
+                    className="bg-none border-none cursor-pointer text-[0.78rem] text-text-dim flex items-center gap-1 hover:text-red-500 transition-colors"
+                    title="Delete comment"
+                    onClick={() => { setDeletingCommentId(comment.id); openDeleteDialog('comment', `comment-${comment.id}`) }}
+                  >
+                    <i className="fa-solid fa-trash"></i>
+                  </button>
+                </>
               )}
             </div>
           </div>
+          {deletingCommentId === comment.id && (
+            <ScopedConfirmDialog
+              title="Delete Comment?"
+              message="This comment will be removed from this thread."
+              confirmLabel="Delete"
+              anchorTop={deleteDialog?.anchorTop ?? window.innerHeight / 2}
+              anchorLeft={deleteDialog?.anchorLeft ?? window.innerWidth / 2}
+              onCancel={() => { setDeletingCommentId(null); setDeleteDialog(null) }}
+              onConfirm={() => handleDeleteComment(comment.id)}
+            />
+          )}
         </div>
 
         <div className={`children ${isCollapsed ? 'thread-replies-collapsed' : ''}`}>
@@ -679,7 +771,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
                 {user?.id === post.user_id && (
                   <>
                     <button className="flex items-center gap-2 w-full py-2 px-3 bg-none border-none cursor-pointer text-text-main text-[0.9rem] rounded-md hover:bg-primary-dim" onClick={() => { setEditPostText(post.content); setEditingPost(true); setShowMenu(false) }}><i className="fa-solid fa-pen"></i> Edit</button>
-                    <button className="flex items-center gap-2 w-full py-2 px-3 bg-none border-none cursor-pointer text-red-500 text-[0.9rem] rounded-md hover:bg-red-500/10" onClick={() => setShowDeleteModal(true)}><i className="fa-solid fa-trash"></i> Delete</button>
+                    <button className="flex items-center gap-2 w-full py-2 px-3 bg-none border-none cursor-pointer text-red-500 text-[0.9rem] rounded-md hover:bg-red-500/10" onClick={() => { setShowMenu(false); setShowDeleteModal(true); openDeleteDialog('post', `post-${post.id}`) }}><i className="fa-solid fa-trash"></i> Delete</button>
                   </>
                 )}
               </div>
@@ -768,16 +860,15 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
       )}
       {viewingImage && <div className="fixed inset-0 bg-black/85 z-[99999] flex items-center justify-center" onClick={() => setViewingImage(null)}><div className="relative"><button className="absolute -top-10 right-0 text-white cursor-pointer bg-none border-none text-xl" onClick={() => setViewingImage(null)}>X</button><img src={viewingImage} className="max-w-[90vw] max-h-[85vh] rounded-lg" alt="" /></div></div>}
       {showDeleteModal && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999]">
-          <div className="bg-surface rounded-2xl p-6 border border-border-dark w-[300px]">
-            <h3 className="font-bold text-xl mb-4">Delete Post?</h3>
-            <p className="text-text-dim mb-6 text-sm">This action cannot be undone and will remove the post from your timeline.</p>
-            <div className="flex justify-end gap-3">
-              <button className="py-2 px-4 bg-transparent text-text-dim border border-border-dark rounded-lg cursor-pointer hover:bg-white/5 transition-colors" onClick={() => setShowDeleteModal(false)}>Cancel</button>
-              <button className="py-2 px-4 bg-red-500 text-white rounded-lg cursor-pointer hover:bg-red-600 transition-colors" onClick={() => onDelete(post.id)}>Delete</button>
-            </div>
-          </div>
-        </div>
+        <ScopedConfirmDialog
+          title="Delete Post?"
+          message="This action cannot be undone and will remove the post from your timeline."
+          confirmLabel="Delete"
+          anchorTop={deleteDialog?.anchorTop ?? window.innerHeight / 2}
+          anchorLeft={deleteDialog?.anchorLeft ?? window.innerWidth / 2}
+          onCancel={() => { setShowDeleteModal(false); setDeleteDialog(null) }}
+          onConfirm={() => { setShowDeleteModal(false); setDeleteDialog(null); onDelete(post.id) }}
+        />
       )}
       {editingPost && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999]" onClick={() => setEditingPost(false)}>

@@ -113,6 +113,7 @@ router.post('/', async (req, res) => {
   }
 
   if (error) {
+    console.error('Database error creating post:', error)
     // If youtube_data column doesn't exist, try without it
     if (error.message?.includes('youtube_data')) {
       delete insertData.youtube_data
@@ -121,7 +122,10 @@ router.post('/', async (req, res) => {
         .insert([{ content, username, user_id, image_url }])
         .select()
 
-      if (retryError) return res.status(500).json({ error: retryError.message })
+      if (retryError) {
+        console.error('Database error on post retry:', retryError)
+        return res.status(500).json({ error: retryError.message })
+      }
 
       if (retryData?.[0]) {
         await notifyMentions(retryData[0].id, content, mentions, user_id, username)

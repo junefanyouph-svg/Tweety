@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { styles } from '../styles/Messages.styles'
 import NewMessageModal from '../components/NewMessageModal'
-
-const API_URL = import.meta.env.VITE_API_URL
+import { API_URL } from '../utils/apiUrl'
 
 export default function DirectMessages() {
     const [conversations, setConversations] = useState([])

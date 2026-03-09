@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { styles } from '../styles/Settings.styles'
 import { invalidateProfile } from '../utils/profileCache'
-
-const API_URL = import.meta.env.VITE_API_URL
+import { API_URL } from '../utils/apiUrl'
 
 export default function Settings() {
   const [user, setUser] = useState(null)

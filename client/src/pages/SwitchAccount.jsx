@@ -3,8 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { styles } from '../styles/SwitchAccount.styles'
 import { getAccounts, saveAccount, removeAccount } from '../utils/accountStore'
-
-const API_URL = import.meta.env.VITE_API_URL
+import { API_URL } from '../utils/apiUrl'
 
 export default function SwitchAccount() {
     const [accounts, setAccounts] = useState([])

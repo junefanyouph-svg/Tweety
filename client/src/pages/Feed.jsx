@@ -9,8 +9,7 @@ import UserMentionPicker from '../components/UserMentionPicker'
 import RichTextEditor from '../components/RichTextEditor'
 import { setCache, getCache, invalidateCache } from '../utils/cache'
 import PullToRefresh from '../components/PullToRefresh'
-
-const API_URL = import.meta.env.VITE_API_URL
+import { API_URL } from '../utils/apiUrl'
 
 export default function Feed() {
   const [posts, setPosts] = useState([])
@@ -237,28 +236,37 @@ export default function Feed() {
       image_url = gifUrl
     }
 
-    const res = await fetch(`${API_URL}/posts`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        content: contentToSend,
-        username: senderUsername,
-        user_id: user.id,
-        image_url,
-        mentions: mentions.map(m => m.user_id),
-        youtube_data: youtubeData
+    try {
+      const res = await fetch(`${API_URL}/posts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: contentToSend,
+          username: senderUsername,
+          user_id: user.id,
+          image_url,
+          mentions: mentions.map(m => m.user_id),
+          youtube_data: youtubeData
+        })
       })
-    })
 
+      if (!res.ok) {
+        const errorData = await res.json()
+        throw new Error(errorData.error || 'Failed to create post')
+      }
 
-
-    setContent('')
-    clearImage()
-    setMentions([])
-    setYoutubeData(null)
-    setUploading(false)
-    invalidateCache('feed-posts')
-    fetchPosts()
+      setContent('')
+      clearImage()
+      setMentions([])
+      setYoutubeData(null)
+      invalidateCache('feed-posts')
+      fetchPosts()
+    } catch (err) {
+      console.error('Error creating post:', err)
+      alert(`Could not create post: ${err.message}`)
+    } finally {
+      setUploading(false)
+    }
   }
 
   const handleDelete = async (id) => {
@@ -338,127 +346,127 @@ export default function Feed() {
     <PullToRefresh onRefresh={fetchPosts}>
       <div className="max-w-[620px] mx-auto px-3 w-full box-border">
 
-      {/* Compose Box */}
-      <div className="bg-surface rounded-2xl p-4 my-3 border border-border-dark relative transition-all duration-200 focus-within:border-primary focus-within:shadow-[0_0_0_3px_rgba(0,191,166,0.22)]" ref={composeBoxRef}>
-        <RichTextEditor
-          content={content}
-          onChange={handleContentChange}
-          placeholder="What's happening?"
-          textareaRef={textareaRef}
-        />
+        {/* Compose Box */}
+        <div className="bg-surface rounded-2xl p-4 my-3 border border-border-dark relative transition-all duration-200 focus-within:border-primary focus-within:shadow-[0_0_0_3px_rgba(0,191,166,0.22)]" ref={composeBoxRef}>
+          <RichTextEditor
+            content={content}
+            onChange={handleContentChange}
+            placeholder="What's happening?"
+            textareaRef={textareaRef}
+          />
 
-        {/* Inline Mention Picker */}
-        {showMentionPicker && (
-          <UserMentionPicker
-            onSelect={handleMentionSelect}
-            onClose={() => setShowMentionPicker(false)}
-            searchQuery={mentionSearchQuery}
-            position={{ top: mentionPickerPosition.top, left: mentionPickerPosition.left }}
-            currentUserId={user?.id}
+          {/* Inline Mention Picker */}
+          {showMentionPicker && (
+            <UserMentionPicker
+              onSelect={handleMentionSelect}
+              onClose={() => setShowMentionPicker(false)}
+              searchQuery={mentionSearchQuery}
+              position={{ top: mentionPickerPosition.top, left: mentionPickerPosition.left }}
+              currentUserId={user?.id}
+            />
+          )}
+
+          {/* Image Preview */}
+          {imagePreview && (
+            <div className="relative mt-2.5 inline-block w-full">
+              <img src={imagePreview} className="max-w-full max-h-[300px] rounded-xl border border-border-dark block" alt="preview" />
+              <button className="absolute top-2 right-2 bg-black/70 border-none rounded-full w-7 h-7 cursor-pointer text-white flex items-center justify-center hover:bg-black transition-colors" onClick={clearImage}>
+                <i className="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+          )}
+
+          {/* YouTube Preview */}
+          {youtubeData && (
+            <div className="relative mt-3 flex flex-wrap items-center gap-3 p-3 bg-bg-dark rounded-xl border border-border-dark">
+              <div className="w-full relative">
+                <iframe
+                  width="100%"
+                  height="315"
+                  src={`https://www.youtube.com/embed/${youtubeData.video_id}`}
+                  title="YouTube video player"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  allowFullScreen
+                  className="rounded-xl border-none"
+                />
+              </div>
+              <button className="absolute top-2 right-2 bg-black/70 border-none rounded-full w-7 h-7 cursor-pointer text-white flex items-center justify-center hover:bg-black transition-colors z-[10]" onClick={clearYoutube}>
+                <i className="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+          )}
+
+          <div className="flex justify-between items-center mt-2 pt-2 border-t border-border-dark">
+            <div className="flex gap-1 items-center">
+              {/* Image Upload */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleImageSelect}
+              />
+              <button
+                className="bg-none border-none cursor-pointer text-primary text-[1.1rem] p-2 hover:bg-primary/10 rounded-lg transition-colors"
+                onClick={() => fileInputRef.current.click()}
+                title="Upload image"
+              >
+                <i className="fa-solid fa-image"></i>
+              </button>
+
+              {/* GIF Picker */}
+              <button
+                className="bg-none border-none cursor-pointer text-primary p-2 hover:bg-primary/10 rounded-lg transition-colors flex items-center"
+                onClick={() => setShowGifPicker(true)}
+                title="Add GIF"
+              >
+                <span className="font-bold text-[0.85rem] border-2 border-primary rounded-md px-1 py-0.5">GIF</span>
+              </button>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <span className={`text-[0.85rem] ${content.length > 260 ? 'text-red-500 font-bold' : 'text-text-dim'}`}>
+                {content.length}/280
+              </span>
+              <button
+                className={`py-2 px-7 bg-primary text-white border-none rounded-[20px] text-[0.95rem] font-bold transition-all ${((!content.trim() && !imagePreview && !youtubeData) || uploading) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-primary-hover active:scale-95'}`}
+                onClick={handlePost}
+                disabled={(!content.trim() && !imagePreview && !youtubeData) || uploading}
+              >
+                {uploading ? 'Posting...' : 'Post'}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* GIF Picker Modal */}
+        {showGifPicker && (
+          <GifPicker
+            onSelect={handleGifSelect}
+            onClose={() => setShowGifPicker(false)}
           />
         )}
 
-        {/* Image Preview */}
-        {imagePreview && (
-          <div className="relative mt-2.5 inline-block w-full">
-            <img src={imagePreview} className="max-w-full max-h-[300px] rounded-xl border border-border-dark block" alt="preview" />
-            <button className="absolute top-2 right-2 bg-black/70 border-none rounded-full w-7 h-7 cursor-pointer text-white flex items-center justify-center hover:bg-black transition-colors" onClick={clearImage}>
-              <i className="fa-solid fa-xmark"></i>
-            </button>
-          </div>
-        )}
-
-        {/* YouTube Preview */}
-        {youtubeData && (
-          <div className="relative mt-3 flex flex-wrap items-center gap-3 p-3 bg-bg-dark rounded-xl border border-border-dark">
-            <div className="w-full relative">
-              <iframe
-                width="100%"
-                height="315"
-                src={`https://www.youtube.com/embed/${youtubeData.video_id}`}
-                title="YouTube video player"
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                referrerPolicy="strict-origin-when-cross-origin"
-                allowFullScreen
-                className="rounded-xl border-none"
-              />
-            </div>
-            <button className="absolute top-2 right-2 bg-black/70 border-none rounded-full w-7 h-7 cursor-pointer text-white flex items-center justify-center hover:bg-black transition-colors z-[10]" onClick={clearYoutube}>
-              <i className="fa-solid fa-xmark"></i>
-            </button>
-          </div>
-        )}
-
-        <div className="flex justify-between items-center mt-2 pt-2 border-t border-border-dark">
-          <div className="flex gap-1 items-center">
-            {/* Image Upload */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleImageSelect}
-            />
-            <button
-              className="bg-none border-none cursor-pointer text-primary text-[1.1rem] p-2 hover:bg-primary/10 rounded-lg transition-colors"
-              onClick={() => fileInputRef.current.click()}
-              title="Upload image"
-            >
-              <i className="fa-solid fa-image"></i>
-            </button>
-
-            {/* GIF Picker */}
-            <button
-              className="bg-none border-none cursor-pointer text-primary p-2 hover:bg-primary/10 rounded-lg transition-colors flex items-center"
-              onClick={() => setShowGifPicker(true)}
-              title="Add GIF"
-            >
-              <span className="font-bold text-[0.85rem] border-2 border-primary rounded-md px-1 py-0.5">GIF</span>
-            </button>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <span className={`text-[0.85rem] ${content.length > 260 ? 'text-red-500 font-bold' : 'text-text-dim'}`}>
-              {content.length}/280
-            </span>
-            <button
-              className={`py-2 px-7 bg-primary text-white border-none rounded-[20px] text-[0.95rem] font-bold transition-all ${((!content.trim() && !imagePreview && !youtubeData) || uploading) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-primary-hover active:scale-95'}`}
-              onClick={handlePost}
-              disabled={(!content.trim() && !imagePreview && !youtubeData) || uploading}
-            >
-              {uploading ? 'Posting...' : 'Post'}
-            </button>
-          </div>
+        {/* Posts Feed */}
+        <div className="flex flex-col gap-[5px] pb-8">
+          {loading
+            ? Array(4).fill(0).map((_, i) => <PostSkeleton key={i} />)
+            : posts.length === 0
+              ? <p className="text-center text-text-dim mt-8 text-[0.95rem]">No posts yet. Be the first! 🚀</p>
+              : posts.map(post => (
+                <PostCard
+                  key={post.id}
+                  post={post}
+                  user={user}
+                  onDelete={handleDelete}
+                  onNavigate={() => navigate(`/post/${post.id}`, { state: { from: '/feed', fromLabel: 'Feed' } })}
+                />
+              ))
+          }
         </div>
       </div>
-
-      {/* GIF Picker Modal */}
-      {showGifPicker && (
-        <GifPicker
-          onSelect={handleGifSelect}
-          onClose={() => setShowGifPicker(false)}
-        />
-      )}
-
-      {/* Posts Feed */}
-      <div className="flex flex-col gap-[5px] pb-8">
-        {loading
-          ? Array(4).fill(0).map((_, i) => <PostSkeleton key={i} />)
-          : posts.length === 0
-            ? <p className="text-center text-text-dim mt-8 text-[0.95rem]">No posts yet. Be the first! 🚀</p>
-            : posts.map(post => (
-              <PostCard
-                key={post.id}
-                post={post}
-                user={user}
-                onDelete={handleDelete}
-                onNavigate={() => navigate(`/post/${post.id}`, { state: { from: '/feed', fromLabel: 'Feed' } })}
-              />
-            ))
-        }
-      </div>
-    </div>
     </PullToRefresh>
   )
 }

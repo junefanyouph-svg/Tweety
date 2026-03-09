@@ -8,8 +8,7 @@ import { setCache, getCache, invalidateCache } from '../utils/cache'
 import { invalidateProfile } from '../utils/profileCache'
 import AvatarCropper from '../components/AvatarCropper'
 import PullToRefresh from '../components/PullToRefresh'
-
-const API_URL = import.meta.env.VITE_API_URL
+import { API_URL } from '../utils/apiUrl'
 
 export default function Profile() {
   const { username } = useParams()
@@ -249,179 +248,179 @@ export default function Profile() {
   return (
     <PullToRefresh onRefresh={handleRefresh}>
       <div className="max-w-[620px] mx-auto px-3 w-full box-border pb-8">
-      {/* Profile Card */}
-      <div className="bg-surface rounded-2xl p-6 my-5 border border-border-dark flex gap-5 items-start max-sm:flex-col">
-        <div
-          className={`relative inline-block ${isOwnProfile ? 'cursor-pointer group' : 'cursor-default'}`}
-          onMouseEnter={() => setAvatarHovered(true)}
-          onMouseLeave={() => setAvatarHovered(false)}
-          onClick={() => isOwnProfile && !avatarUploading && avatarInputRef.current.click()}
-        >
-          <div className="relative overflow-hidden rounded-full border-[3px] border-primary shadow-xl">
-            {profile?.avatar_url ? (
-              <img
-                src={profile.avatar_url}
-                className="w-20 h-20 object-cover"
-                alt="avatar"
-              />
-            ) : (
-              <div className="w-20 h-20 bg-primary flex items-center justify-center text-[2rem] font-bold text-white">
-                {(profile?.display_name || username)?.charAt(0).toUpperCase()}
-              </div>
-            )}
-
-            {/* Uploading overlay */}
-            {avatarUploading && (
-              <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10 transition-opacity">
-                <i className="fa-solid fa-circle-notch fa-spin text-white text-[1.6rem]"></i>
-              </div>
-            )}
-
-            {/* Hover overlay */}
-            {isOwnProfile && !avatarUploading && (
-              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                <i className="fa-solid fa-camera text-white text-[1.3rem]"></i>
-              </div>
-            )}
-          </div>
-
-          {/* Upload input */}
-          {isOwnProfile && (
-            <input
-              ref={avatarInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleAvatarUpload}
-            />
-          )}
-        </div>
-
-        <div className="flex-1 min-w-0">
-          <div className="flex justify-between items-start gap-4 mb-1">
-            <div className="min-w-0">
-              <h2 className="text-[1.3rem] font-bold text-text-main truncate">{profile?.display_name || username}</h2>
-              <p className="text-primary text-[0.85rem]">@{username}</p>
-            </div>
-            {isOwnProfile ? (
-              <button
-                className="py-1.5 px-3 bg-white/5 text-text-main border border-border-dark rounded-lg text-[0.85rem] font-bold hover:bg-white/10 transition-colors shrink-0"
-                onClick={() => setIsEditing(true)}
-              >
-                <i className="fa-solid fa-pen mr-1.5 opacity-60"></i> Edit Profile
-              </button>
-            ) : (
-              <div className="flex gap-2">
-                <button
-                  className={`py-1.5 px-5 rounded-lg text-[0.85rem] font-bold border transition-all ${isFollowing ? 'border-primary text-primary hover:bg-primary/10' : 'bg-primary text-white border-primary hover:opacity-90 active:scale-95'}`}
-                  onClick={handleFollow}
-                >
-                  {isFollowing ? 'Unfollow' : followsMe ? 'Follow Back' : 'Follow'}
-                </button>
-                <button
-                  className="p-2 px-2.5 bg-white/5 text-text-dim border border-border-dark rounded-lg hover:bg-white/10 transition-colors"
-                  onClick={() => navigate(`/messages/${profile.user_id}`)}
-                >
-                  <i className="fa-solid fa-envelope"></i>
-                </button>
-              </div>
-            )}
-          </div>
-
-          {isEditing ? (
-            <div className="mt-3 flex flex-col gap-2">
-              <textarea
-                className="w-full bg-bg-dark border border-border-dark rounded-xl p-3 text-text-main text-[0.95rem] outline-none focus:border-primary transition-all resize-none"
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
-                placeholder="Write a bio..."
-                rows={3}
-              />
-              <div className="flex gap-2 justify-end">
-                <button className="py-1.5 px-4 bg-primary text-white text-[0.85rem] font-bold rounded-lg hover:opacity-90 transition-opacity" onClick={handleSaveBio}>Save</button>
-                <button className="py-1.5 px-4 bg-white/5 text-text-dim text-[0.85rem] border border-border-dark rounded-lg hover:bg-white/10 transition-colors" onClick={() => setIsEditing(false)}>Cancel</button>
-              </div>
-            </div>
-          ) : (
-            <p className="text-text-main/80 text-[0.95rem] leading-relaxed my-3 mb-4">{profile?.bio || 'No bio yet.'}</p>
-          )}
-
-          <div className="flex items-center gap-4 flex-wrap text-text-dim text-[0.85rem]">
-            <span className="flex items-center gap-1.5">
-              <i className="fa-solid fa-calendar opacity-50"></i>
-              Joined {new Date(profile?.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-            </span>
-            {followsMe && !isOwnProfile && <span className="bg-white/10 px-1.5 py-0.5 rounded text-[0.7rem] uppercase tracking-wider font-bold">Follows you</span>}
-          </div>
-
-          <div className="flex gap-6 mt-5 pt-4 border-t border-border-dark/60">
-            <div className="flex flex-col items-start gap-0.5">
-              <span className="font-bold text-[1.1rem] text-text-main">{stats?.posts ?? '—'}</span>
-              <span className="text-[0.75rem] text-text-dim uppercase tracking-wider">Posts</span>
-            </div>
-            <div className="flex flex-col items-start gap-0.5">
-              <span className="font-bold text-[1.1rem] text-text-main">{stats?.followers ?? '—'}</span>
-              <span className="text-[0.75rem] text-text-dim uppercase tracking-wider">Followers</span>
-            </div>
-            <div className="flex flex-col items-start gap-0.5">
-              <span className="font-bold text-[1.1rem] text-text-main">{stats?.following ?? '—'}</span>
-              <span className="text-[0.75rem] text-text-dim uppercase tracking-wider">Following</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Posts */}
-      <div className="mt-8">
-        <h3 className="text-[1.1rem] font-bold text-text-main mb-4 pb-3 border-b border-border-dark flex items-center justify-between">
-          Posts
-          <span className="text-text-dim text-[0.8rem] font-normal">{posts.length} items</span>
-        </h3>
-        <div className="flex flex-col gap-[5px]">
-          {postsLoading
-            ? Array(3).fill(0).map((_, i) => <PostSkeleton key={i} />)
-            : posts.length === 0
-              ? <p className="text-center text-text-dim mt-12 py-10 bg-white/5 rounded-2xl border border-dashed border-border-dark">No posts yet.</p>
-              : posts.map(post => (
-                <PostCard
-                  key={post.id}
-                  post={post}
-                  user={user}
-                  onDelete={handleDelete}
-                  onNavigate={() => navigate(`/post/${post.id}`, { state: { from: `/profile/${username}`, fromLabel: `@${username}` } })}
+        {/* Profile Card */}
+        <div className="bg-surface rounded-2xl p-6 my-5 border border-border-dark flex gap-5 items-start max-sm:flex-col">
+          <div
+            className={`relative inline-block ${isOwnProfile ? 'cursor-pointer group' : 'cursor-default'}`}
+            onMouseEnter={() => setAvatarHovered(true)}
+            onMouseLeave={() => setAvatarHovered(false)}
+            onClick={() => isOwnProfile && !avatarUploading && avatarInputRef.current.click()}
+          >
+            <div className="relative overflow-hidden rounded-full border-[3px] border-primary shadow-xl">
+              {profile?.avatar_url ? (
+                <img
+                  src={profile.avatar_url}
+                  className="w-20 h-20 object-cover"
+                  alt="avatar"
                 />
-              ))
-          }
-        </div>
-      </div>
+              ) : (
+                <div className="w-20 h-20 bg-primary flex items-center justify-center text-[2rem] font-bold text-white">
+                  {(profile?.display_name || username)?.charAt(0).toUpperCase()}
+                </div>
+              )}
 
-      {/* Avatar Cropper */}
-      {cropImageSrc && (
-        <AvatarCropper
-          imageSrc={cropImageSrc}
-          onConfirm={handleCropConfirm}
-          onCancel={() => {
-            setCropImageSrc(null)
-            if (avatarInputRef.current) avatarInputRef.current.value = ''
-          }}
-        />
-      )}
+              {/* Uploading overlay */}
+              {avatarUploading && (
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10 transition-opacity">
+                  <i className="fa-solid fa-circle-notch fa-spin text-white text-[1.6rem]"></i>
+                </div>
+              )}
 
-      {/* Avatar Viewer Modal */}
-      {viewingAvatar && (
-        <div
-          className="fixed inset-0 bg-black/85 z-[99999] flex items-center justify-center p-4"
-          onClick={() => setViewingAvatar(false)}
-        >
-          <div className="relative" onClick={e => e.stopPropagation()}>
-            <button className="absolute -top-10 right-0 text-white cursor-pointer bg-none border-none text-2xl hover:scale-110 transition-transform" onClick={() => setViewingAvatar(false)}>
-              <i className="fa-solid fa-xmark"></i>
-            </button>
-            <img src={profile.avatar_url} className="max-w-[80vw] max-h-[80vh] object-contain rounded-full border-4 border-primary shadow-2xl" alt="avatar" />
+              {/* Hover overlay */}
+              {isOwnProfile && !avatarUploading && (
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  <i className="fa-solid fa-camera text-white text-[1.3rem]"></i>
+                </div>
+              )}
+            </div>
+
+            {/* Upload input */}
+            {isOwnProfile && (
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarUpload}
+              />
+            )}
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex justify-between items-start gap-4 mb-1">
+              <div className="min-w-0">
+                <h2 className="text-[1.3rem] font-bold text-text-main truncate">{profile?.display_name || username}</h2>
+                <p className="text-primary text-[0.85rem]">@{username}</p>
+              </div>
+              {isOwnProfile ? (
+                <button
+                  className="py-1.5 px-3 bg-white/5 text-text-main border border-border-dark rounded-lg text-[0.85rem] font-bold hover:bg-white/10 transition-colors shrink-0"
+                  onClick={() => setIsEditing(true)}
+                >
+                  <i className="fa-solid fa-pen mr-1.5 opacity-60"></i> Edit Profile
+                </button>
+              ) : (
+                <div className="flex gap-2">
+                  <button
+                    className={`py-1.5 px-5 rounded-lg text-[0.85rem] font-bold border transition-all ${isFollowing ? 'border-primary text-primary hover:bg-primary/10' : 'bg-primary text-white border-primary hover:opacity-90 active:scale-95'}`}
+                    onClick={handleFollow}
+                  >
+                    {isFollowing ? 'Unfollow' : followsMe ? 'Follow Back' : 'Follow'}
+                  </button>
+                  <button
+                    className="p-2 px-2.5 bg-white/5 text-text-dim border border-border-dark rounded-lg hover:bg-white/10 transition-colors"
+                    onClick={() => navigate(`/messages/${profile.user_id}`)}
+                  >
+                    <i className="fa-solid fa-envelope"></i>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {isEditing ? (
+              <div className="mt-3 flex flex-col gap-2">
+                <textarea
+                  className="w-full bg-bg-dark border border-border-dark rounded-xl p-3 text-text-main text-[0.95rem] outline-none focus:border-primary transition-all resize-none"
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  placeholder="Write a bio..."
+                  rows={3}
+                />
+                <div className="flex gap-2 justify-end">
+                  <button className="py-1.5 px-4 bg-primary text-white text-[0.85rem] font-bold rounded-lg hover:opacity-90 transition-opacity" onClick={handleSaveBio}>Save</button>
+                  <button className="py-1.5 px-4 bg-white/5 text-text-dim text-[0.85rem] border border-border-dark rounded-lg hover:bg-white/10 transition-colors" onClick={() => setIsEditing(false)}>Cancel</button>
+                </div>
+              </div>
+            ) : (
+              <p className="text-text-main/80 text-[0.95rem] leading-relaxed my-3 mb-4">{profile?.bio || 'No bio yet.'}</p>
+            )}
+
+            <div className="flex items-center gap-4 flex-wrap text-text-dim text-[0.85rem]">
+              <span className="flex items-center gap-1.5">
+                <i className="fa-solid fa-calendar opacity-50"></i>
+                Joined {new Date(profile?.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              </span>
+              {followsMe && !isOwnProfile && <span className="bg-white/10 px-1.5 py-0.5 rounded text-[0.7rem] uppercase tracking-wider font-bold">Follows you</span>}
+            </div>
+
+            <div className="flex gap-6 mt-5 pt-4 border-t border-border-dark/60">
+              <div className="flex flex-col items-start gap-0.5">
+                <span className="font-bold text-[1.1rem] text-text-main">{stats?.posts ?? '—'}</span>
+                <span className="text-[0.75rem] text-text-dim uppercase tracking-wider">Posts</span>
+              </div>
+              <div className="flex flex-col items-start gap-0.5">
+                <span className="font-bold text-[1.1rem] text-text-main">{stats?.followers ?? '—'}</span>
+                <span className="text-[0.75rem] text-text-dim uppercase tracking-wider">Followers</span>
+              </div>
+              <div className="flex flex-col items-start gap-0.5">
+                <span className="font-bold text-[1.1rem] text-text-main">{stats?.following ?? '—'}</span>
+                <span className="text-[0.75rem] text-text-dim uppercase tracking-wider">Following</span>
+              </div>
+            </div>
           </div>
         </div>
-      )}
-    </div>
+
+        {/* Posts */}
+        <div className="mt-8">
+          <h3 className="text-[1.1rem] font-bold text-text-main mb-4 pb-3 border-b border-border-dark flex items-center justify-between">
+            Posts
+            <span className="text-text-dim text-[0.8rem] font-normal">{posts.length} items</span>
+          </h3>
+          <div className="flex flex-col gap-[5px]">
+            {postsLoading
+              ? Array(3).fill(0).map((_, i) => <PostSkeleton key={i} />)
+              : posts.length === 0
+                ? <p className="text-center text-text-dim mt-12 py-10 bg-white/5 rounded-2xl border border-dashed border-border-dark">No posts yet.</p>
+                : posts.map(post => (
+                  <PostCard
+                    key={post.id}
+                    post={post}
+                    user={user}
+                    onDelete={handleDelete}
+                    onNavigate={() => navigate(`/post/${post.id}`, { state: { from: `/profile/${username}`, fromLabel: `@${username}` } })}
+                  />
+                ))
+            }
+          </div>
+        </div>
+
+        {/* Avatar Cropper */}
+        {cropImageSrc && (
+          <AvatarCropper
+            imageSrc={cropImageSrc}
+            onConfirm={handleCropConfirm}
+            onCancel={() => {
+              setCropImageSrc(null)
+              if (avatarInputRef.current) avatarInputRef.current.value = ''
+            }}
+          />
+        )}
+
+        {/* Avatar Viewer Modal */}
+        {viewingAvatar && (
+          <div
+            className="fixed inset-0 bg-black/85 z-[99999] flex items-center justify-center p-4"
+            onClick={() => setViewingAvatar(false)}
+          >
+            <div className="relative" onClick={e => e.stopPropagation()}>
+              <button className="absolute -top-10 right-0 text-white cursor-pointer bg-none border-none text-2xl hover:scale-110 transition-transform" onClick={() => setViewingAvatar(false)}>
+                <i className="fa-solid fa-xmark"></i>
+              </button>
+              <img src={profile.avatar_url} className="max-w-[80vw] max-h-[80vh] object-contain rounded-full border-4 border-primary shadow-2xl" alt="avatar" />
+            </div>
+          </div>
+        )}
+      </div>
     </PullToRefresh>
   )
 }

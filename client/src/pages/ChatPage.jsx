@@ -3,8 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { styles } from '../styles/Chat.styles'
 import GifPicker from '../components/GifPicker'
-
-const API_URL = import.meta.env.VITE_API_URL
+import { API_URL } from '../utils/apiUrl'
 
 export default function ChatPage() {
     const { userId } = useParams() // recipient user id or a conversation id

@@ -2,8 +2,7 @@ import { useState } from 'react'
 import { supabase } from '../supabase'
 import { useNavigate, Link } from 'react-router-dom'
 import { saveAccount } from '../utils/accountStore'
-
-const API_URL = import.meta.env.VITE_API_URL
+import { API_URL } from '../utils/apiUrl'
 
 export default function SignUp() {
   const [email, setEmail] = useState('')

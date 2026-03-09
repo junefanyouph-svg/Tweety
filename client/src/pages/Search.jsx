@@ -4,8 +4,7 @@ import { supabase } from '../supabase'
 import { styles } from '../styles/Search.styles'
 import { PostSkeleton, UserCardSkeleton } from '../components/Skeleton'
 import PostCard from '../components/PostCard'
-
-const API_URL = import.meta.env.VITE_API_URL
+import { API_URL } from '../utils/apiUrl'
 
 function escapeRegExp(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')

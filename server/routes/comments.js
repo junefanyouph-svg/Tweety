@@ -25,7 +25,10 @@ router.post('/', async (req, res) => {
     .select('*, profiles(display_name, avatar_url)')
     .single()
 
-  if (error) return res.status(500).json({ error: error.message })
+  if (error) {
+    console.error('Database error creating comment:', error)
+    return res.status(500).json({ error: error.message })
+  }
 
   // Respond immediately — don't block on notifications
   res.json([data])

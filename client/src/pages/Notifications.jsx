@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { styles } from '../styles/Notifications.styles'
 import PullToRefresh from '../components/PullToRefresh'
-
-const API_URL = import.meta.env.VITE_API_URL
+import { API_URL } from '../utils/apiUrl'
 
 export default function Notifications() {
   const [notifications, setNotifications] = useState([])
