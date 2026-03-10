@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 
 const GIPHY_KEY = 'l1VWAKXlnyiPfOc6kY8rYhdL1TRAhciM'
 
@@ -37,9 +38,9 @@ export default function GifPicker({ onSelect, onClose }) {
     window._gifTimeout = setTimeout(() => fetchSearch(val), 500)
   }
 
-  return (
-    <div className="fixed inset-0 bg-black/70 z-[9999] flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-surface rounded-2xl border border-border-dark w-[480px] max-w-full maxHeight-[70vh] flex flex-col overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.5)]" onClick={e => e.stopPropagation()}>
+  return createPortal(
+    <div className="fixed inset-0 bg-black/70 z-[9999] flex items-center justify-center p-4 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-surface rounded-2xl border border-border-dark w-[480px] max-w-full maxHeight-[70vh] flex flex-col overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.5)] animate-[popIn_0.3s_cubic-bezier(0.175,0.885,0.32,1.275)]" onClick={e => e.stopPropagation()}>
         <div className="flex gap-2 p-3 border-b border-border-dark">
           <input
             ref={inputRef}
@@ -73,6 +74,7 @@ export default function GifPicker({ onSelect, onClose }) {
           Powered by GIPHY
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

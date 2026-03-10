@@ -858,7 +858,17 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
           </div>
         </div>
       )}
-      {viewingImage && <div className="fixed inset-0 bg-black/85 z-[99999] flex items-center justify-center" onClick={() => setViewingImage(null)}><div className="relative"><button className="absolute -top-10 right-0 text-white cursor-pointer bg-none border-none text-xl" onClick={() => setViewingImage(null)}>X</button><img src={viewingImage} className="max-w-[90vw] max-h-[85vh] rounded-lg" alt="" /></div></div>}
+      {viewingImage && createPortal(
+        <div className="fixed inset-0 bg-black/85 z-[99999] flex items-center justify-center backdrop-blur-md" onClick={() => setViewingImage(null)}>
+          <div className="relative animate-[popIn_0.3s_ease-out]">
+            <button className="absolute -top-10 right-0 text-white cursor-pointer bg-none border-none text-xl hover:text-primary transition-colors" onClick={() => setViewingImage(null)}>
+              <i className="fa-solid fa-xmark"></i>
+            </button>
+            <img src={viewingImage} className="max-w-[90vw] max-h-[85vh] rounded-lg shadow-2xl" alt="" />
+          </div>
+        </div>,
+        document.body
+      )}
       {showDeleteModal && (
         <ScopedConfirmDialog
           title="Delete Post?"
@@ -870,9 +880,9 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
           onConfirm={() => { setShowDeleteModal(false); setDeleteDialog(null); onDelete(post.id) }}
         />
       )}
-      {editingPost && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999]" onClick={() => setEditingPost(false)}>
-          <div className="bg-surface rounded-2xl p-6 border border-border-dark w-[520px] max-w-[95vw]" onClick={e => e.stopPropagation()}>
+      {editingPost && createPortal(
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999] backdrop-blur-sm" onClick={() => setEditingPost(false)}>
+          <div className="bg-surface rounded-2xl p-6 border border-border-dark w-[520px] max-w-[95vw] shadow-2xl animate-[popIn_0.3s_cubic-bezier(0.175,0.885,0.32,1.275)]" onClick={e => e.stopPropagation()}>
             <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><i className="fa-solid fa-pen text-primary"></i> Edit Post</h3>
             <textarea
               className="w-full bg-white/5 border border-border-dark rounded-xl p-4 text-text-main text-[0.95rem] resize-none outline-none focus:border-primary focus:bg-white/8 transition-all min-h-[120px]"
@@ -889,7 +899,8 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )
