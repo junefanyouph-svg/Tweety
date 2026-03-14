@@ -1,8 +1,15 @@
 {
   "name": "tweety-monorepo",
   "private": true,
+  "scripts": {
+    "build": "npm run build -w client"
+  },
   "engines": {
     "node": ">=20"
   },
+  "workspaces": [
+    "client",
+    "server"
+  ],
   "packageManager": "npm@10.0.0"
 }
