@@ -17,16 +17,16 @@ const notificationsRouter = require('./routes/notifications')
 const settingsRouter = require('./routes/settings')
 const commentLikesRouter = require('./routes/comment_likes')
 
-app.use('/posts', postsRouter)
-app.use('/likes', likesRouter)
-app.use('/replies', commentsRouter)
-app.use('/profiles', profilesRouter)
-app.use('/followers', followersRouter)
-app.use('/notifications', notificationsRouter)
-app.use('/settings', settingsRouter)
-app.use('/comment_likes', commentLikesRouter)
-
-app.get('/health', async (req, res) => {
+const apiRouter = express.Router()
+apiRouter.use('/posts', postsRouter)
+apiRouter.use('/likes', likesRouter)
+apiRouter.use('/replies', commentsRouter)
+apiRouter.use('/profiles', profilesRouter)
+apiRouter.use('/followers', followersRouter)
+apiRouter.use('/notifications', notificationsRouter)
+apiRouter.use('/settings', settingsRouter)
+apiRouter.use('/comment_likes', commentLikesRouter)
+apiRouter.get('/health', async (req, res) => {
   try {
     const { data, error } = await supabase.from('profiles').select('count', { count: 'exact', head: true })
     if (error) throw error
@@ -35,6 +35,9 @@ app.get('/health', async (req, res) => {
     res.status(500).json({ status: 'error', database: 'disconnected', error: err.message })
   }
 })
+
+app.use('/api', apiRouter)
+app.use('/', apiRouter) // Fallback for local dev or direct calls
 
 const PORT = process.env.PORT || 3001
 if (require.main === module) {
