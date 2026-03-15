@@ -176,7 +176,7 @@ export default function Sidebar() {
   return (
     <div className="w-[260px] h-screen bg-bg-dark border-r border-border-dark flex flex-col p-6 px-4 fixed left-0 top-0 z-[100] max-md:hidden">
       <div className="flex items-center gap-3 mb-8 px-3 cursor-pointer" onClick={() => navigate('/feed')}>
-        <img src="/icon-192.png" alt="Jargon Logo" className="w-9 h-9 object-contain" />
+        <img src="/Jargon(Logo).png" alt="Jargon Logo" className="w-9 h-9 object-contain" />
         <span className="text-[1.5rem] font-bold text-primary">Jargon</span>
       </div>
 
