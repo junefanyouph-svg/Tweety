@@ -16,13 +16,11 @@ export function formatDate(dateString) {
   const diffMinutes = Math.floor(diffMs / (1000 * 60))
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-  const diffWeeks = Math.floor(diffDays / 7)
 
   if (diffMinutes < 1) return 'now'
   if (diffMinutes < 60) return `${diffMinutes}m`
   if (diffHours < 24) return `${diffHours}h`
   if (diffDays < 7) return `${diffDays}d`
-  if (diffDays < 28) return `${diffWeeks}w`
 
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
   const month = months[date.getMonth()]
