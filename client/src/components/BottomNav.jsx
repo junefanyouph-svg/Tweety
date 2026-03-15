@@ -271,6 +271,8 @@ export default function BottomNav() {
             onClick={() => {
               if (item.path === '/feed' && location.pathname === '/feed') {
                 window.scrollTo({ top: 0, behavior: 'smooth' })
+              } else if (item.path === '/search' && location.pathname === '/search') {
+                window.dispatchEvent(new CustomEvent('tweety_focus_search'))
               } else {
                 navigate(item.path)
               }

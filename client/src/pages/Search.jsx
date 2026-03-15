@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { styles } from '../styles/Search.styles'
@@ -37,6 +37,7 @@ export default function Search() {
   const [activeTab, setActiveTab] = useState('all')
   const [searched, setSearched] = useState(false)
   const [loading, setLoading] = useState(false)
+  const inputRef = useRef(null)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -46,6 +47,12 @@ export default function Search() {
       else setUser(user)
     }
     getUser()
+
+    const handleFocusSearch = () => {
+      inputRef.current?.focus()
+    }
+    window.addEventListener('tweety_focus_search', handleFocusSearch)
+    return () => window.removeEventListener('tweety_focus_search', handleFocusSearch)
   }, [])
 
   useEffect(() => {
@@ -78,6 +85,13 @@ export default function Search() {
     setPosts(postsData)
     setUsers(usersData)
     setLoading(false)
+  }
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handleSearch()
+      inputRef.current?.blur()
+    }
   }
 
   const handleDelete = async (id) => {
@@ -119,10 +133,12 @@ export default function Search() {
       <div style={styles.header}>
         <h2 style={styles.title}>Search</h2>
         <input
+          ref={inputRef}
           style={styles.searchInput}
           placeholder="Search posts or users..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={handleKeyDown}
           autoFocus
         />
       </div>
