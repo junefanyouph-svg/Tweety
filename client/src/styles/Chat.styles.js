@@ -99,7 +99,7 @@ export const styles = {
     otherMessageWrapper: { justifyContent: 'flex-start' },
 
     messageContent: { position: 'relative', maxWidth: '75%', padding: '12px 16px', fontSize: '0.95rem', lineHeight: '1.5', whiteSpace: 'pre-wrap', wordBreak: 'break-word' },
-    myMessage: { backgroundColor: '#00BFA6', color: 'white', borderRadius: '18px 18px 4px 18px', paddingRight: '28px' },
+    myMessage: { backgroundColor: '#00BFA6', color: 'white', borderRadius: '18px 18px 4px 18px', paddingRight: '34px' },
     otherMessage: { backgroundColor: 'var(--color-surface)', color: 'var(--color-text-main)', border: '1px solid var(--color-border-dark)', borderRadius: '18px 18px 18px 4px' },
     bubbleMedia: { width: '100%', maxWidth: '300px', borderRadius: '12px', marginTop: '8px', cursor: 'pointer', border: '1px solid var(--color-border-dark)' },
     messageStatus: {
@@ -111,8 +111,9 @@ export const styles = {
         alignItems: 'center',
         opacity: 0.8
     },
-    checkIcon: { color: 'white' },
-    loadingIcon: { color: 'white' },
+    checkIcon: { color: 'white', fontSize: '11px' },
+    loadingIcon: { color: 'white', fontSize: '11px' },
+    messageTime: { fontSize: '0.72rem', color: 'var(--color-text-dim)', marginTop: '4px', paddingLeft: '8px', paddingRight: '8px', animation: 'slideDown 0.2s ease' },
 
     inputArea: {
         padding: '16px',

@@ -29,6 +29,7 @@ export default function ChatPage() {
     const [mediaPreview, setMediaPreview] = useState(null)
     const [mediaType, setMediaType] = useState(null) // 'image' or 'video'
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768)
+    const [selectedMessageId, setSelectedMessageId] = useState(null)
     const textareaRef = useRef(null)
     const fileInputRef = useRef(null)
     const messagesEndRef = useRef(null)
@@ -450,7 +451,14 @@ export default function ChatPage() {
                             key={msg.id}
                             style={{
                                 ...styles.messageWrapper,
-                                ...(msg.sender_id === currentUser?.id ? styles.myMessageWrapper : styles.otherMessageWrapper)
+                                ...(msg.sender_id === currentUser?.id ? styles.myMessageWrapper : styles.otherMessageWrapper),
+                                flexDirection: 'column',
+                                alignItems: msg.sender_id === currentUser?.id ? 'flex-end' : 'flex-start'
+                            }}
+                            onClick={() => {
+                                if (isMobile) {
+                                    setSelectedMessageId(selectedMessageId === msg.id ? null : msg.id)
+                                }
                             }}
                         >
                             <div
@@ -479,6 +487,11 @@ export default function ChatPage() {
                                     </div>
                                 )}
                             </div>
+                            {isMobile && selectedMessageId === msg.id && (
+                                <div style={styles.messageTime}>
+                                    {new Date(msg.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}, {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </div>
+                            )}
                         </div>
                     ))
                 )}
