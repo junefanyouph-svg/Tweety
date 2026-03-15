@@ -195,7 +195,13 @@ export default function Sidebar() {
           <button
             key={item.path}
             className={`flex items-center gap-3.5 p-3 px-4 rounded-xl border-none text-base cursor-pointer text-left transition-all active:scale-95 ${isActive(item.path) ? 'bg-primary/10 text-primary font-bold shadow-sm' : 'bg-transparent text-text-dim hover:bg-white/5'}`}
-            onClick={() => navigate(item.path)}
+            onClick={() => {
+              if (item.path === '/feed' && location.pathname === '/feed') {
+                window.scrollTo({ top: 0, behavior: 'smooth' })
+              } else {
+                navigate(item.path)
+              }
+            }}
           >
             <i className={`${item.icon} w-5 text-center text-[1.1rem]`}></i>
             <span className="text-base">{item.label}</span>

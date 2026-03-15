@@ -1,7 +1,6 @@
 import Sidebar from './Sidebar'
 import BottomNav from './BottomNav'
 import NotificationToast from './NotificationToast'
-import ScrollToTopButton from './ScrollToTopButton'
 import { useLocation } from 'react-router-dom'
 
 export default function Layout({ children }) {
@@ -15,7 +14,6 @@ export default function Layout({ children }) {
         {children}
       </div>
       {!isChatPage && <BottomNav />}
-      <ScrollToTopButton />
       <NotificationToast />
     </div>
   )

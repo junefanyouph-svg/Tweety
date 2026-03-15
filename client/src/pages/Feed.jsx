@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
 
@@ -10,6 +11,7 @@ import RichTextEditor from '../components/RichTextEditor'
 import { setCache, getCache, invalidateCache } from '../utils/cache'
 import PullToRefresh from '../components/PullToRefresh'
 import { API_URL } from '../utils/apiUrl'
+import { getProfile } from '../utils/profileCache'
 
 export default function Feed() {
   const [posts, setPosts] = useState([])
@@ -26,6 +28,9 @@ export default function Feed() {
   const [mentions, setMentions] = useState([])
   const [youtubeData, setYoutubeData] = useState(null)
   const [mentionPickerPosition, setMentionPickerPosition] = useState({ top: 0, left: 0 })
+  const [showCompose, setShowCompose] = useState(false)
+  const [isComposeClosing, setIsComposeClosing] = useState(false)
+  const [userProfile, setUserProfile] = useState(null)
   const fileInputRef = useRef(null)
   const textareaRef = useRef(null)
   const composeBoxRef = useRef(null)
@@ -53,7 +58,6 @@ export default function Feed() {
         })
       }
     } catch (err) {
-      // Fallback to basic thumbnail
       setYoutubeData({
         video_id: videoId,
         title: 'YouTube Video',
@@ -80,7 +84,11 @@ export default function Feed() {
   const getUser = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) navigate('/')
-    else setUser(user)
+    else {
+      setUser(user)
+      const profile = await getProfile(user.user_metadata?.username, API_URL)
+      if (profile) setUserProfile(profile)
+    }
   }
 
   const fetchPosts = async () => {
@@ -147,25 +155,20 @@ export default function Feed() {
     const newContent = e.target.value
     setContent(newContent)
 
-    // Store cursor position from the synthetic event provided by RichTextEditor
     const cursorPos = e.target.selectionStart ?? newContent.length
     lastCursorPos.current = cursorPos
 
-    // Check for @ mention
     const textBeforeCursor = newContent.slice(0, cursorPos)
     const lastAtIndex = textBeforeCursor.lastIndexOf('@')
 
     if (lastAtIndex !== -1) {
       const textAfterAt = textBeforeCursor.slice(lastAtIndex + 1)
-      // Check if there's a space after @ (which means user finished typing the mention)
       const hasSpace = textAfterAt.includes(' ')
 
       if (!hasSpace && textAfterAt.length >= 0) {
-        // Show mention picker
         setMentionSearchQuery(textAfterAt)
         setShowMentionPicker(true)
 
-        // Calculate position for the dropdown
         if (textareaRef.current && composeBoxRef.current) {
           const composeRect = composeBoxRef.current.getBoundingClientRect()
           const selection = window.getSelection()
@@ -259,6 +262,7 @@ export default function Feed() {
       clearImage()
       setMentions([])
       setYoutubeData(null)
+      closeCompose()
       invalidateCache('feed-posts')
       fetchPosts()
     } catch (err) {
@@ -276,7 +280,6 @@ export default function Feed() {
   }
 
   const handleMentionSelect = (selectedUser) => {
-    // Use the stored cursor position from the last input event
     const cursorPos = lastCursorPos.current || content.length
     const textBeforeCursor = content.slice(0, cursorPos)
     const lastAtIndex = textBeforeCursor.lastIndexOf('@')
@@ -287,12 +290,10 @@ export default function Feed() {
       const newContent = beforeAt + '@' + selectedUser.username + ' ' + afterCursor
       setContent(newContent)
     } else {
-      // When triggered from button click, just append
       const separator = content.length > 0 && !content.endsWith(' ') ? ' ' : ''
       setContent(content + separator + '@' + selectedUser.username + ' ')
     }
 
-    // Add to mentions if not already added
     if (!mentions.find(m => m.user_id === selectedUser.user_id)) {
       setMentions(prev => [...prev, selectedUser])
     }
@@ -301,145 +302,218 @@ export default function Feed() {
     setTimeout(() => textareaRef.current?.focus(), 0)
   }
 
-  // Render draft content with highlighted mentions and YouTube links
-  const renderDraftContent = (text) => {
-    if (!text) return null
-
-    const parts = text.split(/(@[a-zA-Z0-9_]+)/g)
-
-    return parts.map((part, idx) => {
-      // Highlight mentions
-      if (part.startsWith('@')) {
-        return (
-          <span
-            key={idx}
-            style={{
-              color: 'rgb(0, 191, 166)',
-              fontWeight: 'bold',
-            }}
-          >
-            {part}
-          </span>
-        )
-      }
-
-      // Highlight URLs
-      const urlRegex = /(https?:\/\/[^\s]+)/g
-      const urlParts = part.split(urlRegex)
-      return urlParts.map((urlPart, urlIdx) => {
-        if (urlRegex.test(urlPart)) {
-          return (
-            <span
-              key={`${idx}-${urlIdx}`}
-              style={{ color: '#1d9bf0', textDecoration: 'underline' }}
-            >
-              {urlPart}
-            </span>
-          )
-        }
-        return <span key={`${idx}-${urlIdx}`}>{urlPart}</span>
-      })
-    })
+  // --- Compose Overlay ---
+  const openCompose = () => {
+    setIsComposeClosing(false)
+    setShowCompose(true)
   }
 
-  return (
-    <PullToRefresh onRefresh={fetchPosts}>
-      <div className="max-w-[620px] mx-auto px-3 w-full box-border">
+  const closeCompose = () => {
+    setIsComposeClosing(true)
+    setTimeout(() => {
+      setShowCompose(false)
+      setIsComposeClosing(false)
+    }, 260)
+  }
 
-        {/* Compose Box */}
-        <div className="bg-surface rounded-2xl p-4 my-3 border border-border-dark relative transition-all duration-200 focus-within:border-primary focus-within:shadow-[0_0_0_3px_rgba(0,191,166,0.22)]" ref={composeBoxRef}>
+  // Handle hardware back button / popstate to close compose
+  useEffect(() => {
+    if (!showCompose) return
+
+    // Lock body scroll
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    // Push a fake history entry so hardware "back" closes compose
+    window.history.pushState({ compose: true }, '')
+    const handlePopState = () => {
+      closeCompose()
+    }
+    window.addEventListener('popstate', handlePopState)
+
+    return () => {
+      document.body.style.overflow = prevOverflow
+      window.removeEventListener('popstate', handlePopState)
+    }
+  }, [showCompose])
+
+  // Detect mobile
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
+
+  const composeUI = (
+    <div className="relative" ref={composeBoxRef}>
+      {/* Header for mobile */}
+      {isMobile && (
+        <div className="flex justify-between items-center mb-4 px-1">
+          <button
+            className="bg-none border-none cursor-pointer text-text-dim text-xl p-1 hover:text-text-main transition-colors"
+            onClick={() => {
+              window.history.back()
+            }}
+          >
+            <i className="fa-solid fa-xmark"></i>
+          </button>
+          <button
+            className={`py-2 px-6 bg-primary text-white border-none rounded-full text-[0.9rem] font-bold transition-all ${((!content.trim() && !imagePreview && !youtubeData) || uploading) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-primary-hover active:scale-95'}`}
+            onClick={handlePost}
+            disabled={(!content.trim() && !imagePreview && !youtubeData) || uploading}
+          >
+            {uploading ? 'Posting...' : 'Post'}
+          </button>
+        </div>
+      )}
+
+      <div className="flex gap-3 items-start">
+        {/* User Avatar */}
+        <div className="shrink-0 mt-1">
+          {userProfile?.avatar_url ? (
+            <img src={userProfile.avatar_url} className="w-10 h-10 rounded-full object-cover border-2 border-border-dark" alt="" />
+          ) : (
+            <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-base font-bold text-white">
+              {(user?.user_metadata?.username?.charAt(0) || '').toUpperCase()}
+            </div>
+          )}
+        </div>
+
+        <div className="flex-1 min-w-0">
           <RichTextEditor
             content={content}
             onChange={handleContentChange}
             placeholder="What's happening?"
             textareaRef={textareaRef}
+            minHeight={isMobile ? '120px' : '80px'}
+            autoFocus
           />
-
-          {/* Inline Mention Picker */}
-          {showMentionPicker && (
-            <UserMentionPicker
-              onSelect={handleMentionSelect}
-              onClose={() => setShowMentionPicker(false)}
-              searchQuery={mentionSearchQuery}
-              position={{ top: mentionPickerPosition.top, left: mentionPickerPosition.left }}
-              currentUserId={user?.id}
-            />
-          )}
-
-          {/* Image Preview */}
-          {imagePreview && (
-            <div className="relative mt-2.5 inline-block w-full">
-              <img src={imagePreview} className="max-w-full max-h-[300px] rounded-xl border border-border-dark block" alt="preview" />
-              <button className="absolute top-2 right-2 bg-black/70 border-none rounded-full w-7 h-7 cursor-pointer text-white flex items-center justify-center hover:bg-black transition-colors" onClick={clearImage}>
-                <i className="fa-solid fa-xmark"></i>
-              </button>
-            </div>
-          )}
-
-          {/* YouTube Preview */}
-          {youtubeData && (
-            <div className="relative mt-3 flex flex-wrap items-center gap-3 p-3 bg-bg-dark rounded-xl border border-border-dark">
-              <div className="w-full relative">
-                <iframe
-                  width="100%"
-                  height="315"
-                  src={`https://www.youtube.com/embed/${youtubeData.video_id}`}
-                  title="YouTube video player"
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  referrerPolicy="strict-origin-when-cross-origin"
-                  allowFullScreen
-                  className="rounded-xl border-none"
-                />
-              </div>
-              <button className="absolute top-2 right-2 bg-black/70 border-none rounded-full w-7 h-7 cursor-pointer text-white flex items-center justify-center hover:bg-black transition-colors z-[10]" onClick={clearYoutube}>
-                <i className="fa-solid fa-xmark"></i>
-              </button>
-            </div>
-          )}
-
-          <div className="flex justify-between items-center mt-2 pt-2 border-t border-border-dark">
-            <div className="flex gap-1 items-center">
-              {/* Image Upload */}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleImageSelect}
-              />
-              <button
-                className="bg-none border-none cursor-pointer text-primary text-[1.1rem] p-2 hover:bg-primary/10 rounded-lg transition-colors"
-                onClick={() => fileInputRef.current.click()}
-                title="Upload image"
-              >
-                <i className="fa-solid fa-image"></i>
-              </button>
-
-              {/* GIF Picker */}
-              <button
-                className="bg-none border-none cursor-pointer text-primary p-2 hover:bg-primary/10 rounded-lg transition-colors flex items-center"
-                onClick={() => setShowGifPicker(true)}
-                title="Add GIF"
-              >
-                <span className="font-bold text-[0.85rem] border-2 border-primary rounded-md px-1 py-0.5">GIF</span>
-              </button>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <span className={`text-[0.85rem] ${content.length > 260 ? 'text-red-500 font-bold' : 'text-text-dim'}`}>
-                {content.length}/280
-              </span>
-              <button
-                className={`py-2 px-7 bg-primary text-white border-none rounded-[20px] text-[0.95rem] font-bold transition-all ${((!content.trim() && !imagePreview && !youtubeData) || uploading) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-primary-hover active:scale-95'}`}
-                onClick={handlePost}
-                disabled={(!content.trim() && !imagePreview && !youtubeData) || uploading}
-              >
-                {uploading ? 'Posting...' : 'Post'}
-              </button>
-            </div>
-          </div>
         </div>
+      </div>
+
+      {/* Inline Mention Picker */}
+      {showMentionPicker && (
+        <UserMentionPicker
+          onSelect={handleMentionSelect}
+          onClose={() => setShowMentionPicker(false)}
+          searchQuery={mentionSearchQuery}
+          position={{ top: mentionPickerPosition.top, left: mentionPickerPosition.left }}
+          currentUserId={user?.id}
+        />
+      )}
+
+      {/* Image Preview */}
+      {imagePreview && (
+        <div className="relative mt-2.5 inline-block w-full">
+          <img src={imagePreview} className="max-w-full max-h-[300px] rounded-xl border border-border-dark block" alt="preview" />
+          <button className="absolute top-2 right-2 bg-black/70 border-none rounded-full w-7 h-7 cursor-pointer text-white flex items-center justify-center hover:bg-black transition-colors" onClick={clearImage}>
+            <i className="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+      )}
+
+      {/* YouTube Preview */}
+      {youtubeData && (
+        <div className="relative mt-3 flex flex-wrap items-center gap-3 p-3 bg-bg-dark rounded-xl border border-border-dark">
+          <div className="w-full relative">
+            <iframe
+              width="100%"
+              height="315"
+              src={`https://www.youtube.com/embed/${youtubeData.video_id}`}
+              title="YouTube video player"
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              referrerPolicy="strict-origin-when-cross-origin"
+              allowFullScreen
+              className="rounded-xl border-none"
+            />
+          </div>
+          <button className="absolute top-2 right-2 bg-black/70 border-none rounded-full w-7 h-7 cursor-pointer text-white flex items-center justify-center hover:bg-black transition-colors z-[10]" onClick={clearYoutube}>
+            <i className="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+      )}
+
+      {/* Bottom toolbar */}
+      <div className={`flex justify-between items-center mt-3 pt-3 border-t border-border-dark ${isMobile ? 'fixed bottom-0 left-0 right-0 bg-surface px-4 py-3 border-t border-border-dark z-[10] pb-[calc(12px+env(safe-area-inset-bottom))]' : ''}`}>
+        <div className="flex gap-1 items-center">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleImageSelect}
+          />
+          <button
+            className="bg-none border-none cursor-pointer text-primary text-[1.1rem] p-2 hover:bg-primary/10 rounded-lg transition-colors"
+            onClick={() => fileInputRef.current.click()}
+            title="Upload image"
+          >
+            <i className="fa-solid fa-image"></i>
+          </button>
+          <button
+            className="bg-none border-none cursor-pointer text-primary p-2 hover:bg-primary/10 rounded-lg transition-colors flex items-center"
+            onClick={() => setShowGifPicker(true)}
+            title="Add GIF"
+          >
+            <span className="font-bold text-[0.85rem] border-2 border-primary rounded-md px-1 py-0.5">GIF</span>
+          </button>
+        </div>
+
+        {!isMobile && (
+          <div className="flex items-center gap-3">
+            <span className={`text-[0.85rem] ${content.length > 260 ? 'text-red-500 font-bold' : 'text-text-dim'}`}>
+              {content.length}/280
+            </span>
+            <button
+              className={`py-2 px-7 bg-primary text-white border-none rounded-[20px] text-[0.95rem] font-bold transition-all ${((!content.trim() && !imagePreview && !youtubeData) || uploading) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-primary-hover active:scale-95'}`}
+              onClick={handlePost}
+              disabled={(!content.trim() && !imagePreview && !youtubeData) || uploading}
+            >
+              {uploading ? 'Posting...' : 'Post'}
+            </button>
+          </div>
+        )}
+
+        {isMobile && (
+          <span className={`text-[0.85rem] ${content.length > 260 ? 'text-red-500 font-bold' : 'text-text-dim'}`}>
+            {content.length}/280
+          </span>
+        )}
+      </div>
+    </div>
+  )
+
+  const composeOverlay = showCompose ? createPortal(
+    <>
+      {/* Desktop: centered modal */}
+      <div className="hidden md:flex fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm items-start justify-center pt-[10vh]">
+        <div
+          className={`bg-surface border border-border-dark rounded-2xl p-5 w-[560px] max-w-[90vw] shadow-[0_20px_60px_rgba(0,0,0,0.5)] ${isComposeClosing ? 'animate-[composeModalOut_0.22s_ease-in_forwards]' : 'animate-[composeModalIn_0.28s_cubic-bezier(0.22,1,0.36,1)_forwards]'}`}
+          onClick={e => e.stopPropagation()}
+        >
+          <div className="flex justify-between items-center mb-4">
+            <button
+              className="bg-none border-none cursor-pointer text-text-dim text-xl p-1 hover:text-text-main transition-colors"
+              onClick={closeCompose}
+            >
+              <i className="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+          {composeUI}
+        </div>
+        <div className="absolute inset-0 -z-10" onClick={closeCompose} />
+      </div>
+
+      {/* Mobile: full-screen slide-up sheet */}
+      <div className={`md:hidden fixed inset-0 z-[9999] bg-surface flex flex-col ${isComposeClosing ? 'animate-[composeSheetOut_0.26s_cubic-bezier(0.4,0,1,1)_forwards]' : 'animate-[composeSheetIn_0.34s_cubic-bezier(0.22,1,0.36,1)_forwards]'}`}>
+        <div className="flex-1 overflow-y-auto p-4 pb-[80px]">
+          {composeUI}
+        </div>
+      </div>
+    </>,
+    document.body
+  ) : null
+
+  return (
+    <PullToRefresh onRefresh={fetchPosts}>
+      <div className="max-w-[620px] mx-auto px-3 w-full box-border">
 
         {/* GIF Picker Modal */}
         {showGifPicker && (
@@ -450,7 +524,7 @@ export default function Feed() {
         )}
 
         {/* Posts Feed */}
-        <div className="flex flex-col gap-[5px] pb-8">
+        <div className="flex flex-col gap-[5px] pb-8 pt-3">
           {loading
             ? Array(4).fill(0).map((_, i) => <PostSkeleton key={i} />)
             : posts.length === 0
@@ -466,8 +540,18 @@ export default function Feed() {
               ))
           }
         </div>
+
+        {/* Floating Compose Button (FAB) */}
+        <button
+          className="fixed z-[150] w-14 h-14 rounded-full bg-primary text-white border-none shadow-[0_6px_24px_rgba(0,191,166,0.4)] cursor-pointer flex items-center justify-center text-2xl hover:scale-105 active:scale-95 transition-all bottom-[calc(80px+env(safe-area-inset-bottom))] right-5 md:bottom-8 md:right-8"
+          onClick={openCompose}
+          aria-label="Create post"
+        >
+          <i className="fa-solid fa-plus"></i>
+        </button>
+
+        {composeOverlay}
       </div>
     </PullToRefresh>
   )
 }
-
