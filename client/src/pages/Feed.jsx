@@ -32,6 +32,7 @@ export default function Feed() {
   const [isComposeClosing, setIsComposeClosing] = useState(false)
   const [userProfile, setUserProfile] = useState(null)
   const [viewportHeight, setViewportHeight] = useState('100dvh')
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth < 768 : false)
   const fileInputRef = useRef(null)
   const textareaRef = useRef(null)
   const composeBoxRef = useRef(null)
@@ -72,9 +73,22 @@ export default function Feed() {
     fetchPosts()
 
     if (typeof window !== 'undefined' && window.visualViewport) {
-      const updateVp = () => setViewportHeight(`${window.visualViewport.height}px`)
+      const updateVp = () => {
+        setViewportHeight(`${window.visualViewport.height}px`)
+        setIsMobile(window.innerWidth < 768)
+      }
       window.visualViewport.addEventListener('resize', updateVp)
+      window.addEventListener('resize', updateVp)
       updateVp()
+      
+      return () => {
+        window.visualViewport.removeEventListener('resize', updateVp)
+        window.removeEventListener('resize', updateVp)
+      }
+    } else if (typeof window !== 'undefined') {
+      const updateVp = () => setIsMobile(window.innerWidth < 768)
+      window.addEventListener('resize', updateVp)
+      return () => window.removeEventListener('resize', updateVp)
     }
 
     const channel = supabase
@@ -347,9 +361,6 @@ export default function Feed() {
     }
   }, [showCompose])
 
-  // Detect mobile
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
-
   const composeUI = (
     <div className="relative" ref={composeBoxRef}>
       {/* Header for mobile */}
@@ -519,34 +530,38 @@ export default function Feed() {
   const composeOverlay = showCompose ? createPortal(
     <>
       {/* Desktop: centered modal */}
-      <div className="hidden md:flex fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm items-start justify-center pt-[10vh]">
-        <div
-          className={`bg-surface border border-border-dark rounded-2xl p-5 w-[560px] max-w-[90vw] shadow-[0_20px_60px_rgba(0,0,0,0.5)] ${isComposeClosing ? 'animate-[composeModalOut_0.22s_ease-in_forwards]' : 'animate-[composeModalIn_0.28s_cubic-bezier(0.22,1,0.36,1)_forwards]'}`}
-          onClick={e => e.stopPropagation()}
-        >
-          <div className="flex justify-between items-center mb-4">
-            <button
-              className="bg-none border-none cursor-pointer text-text-dim text-xl p-1 hover:text-text-main transition-colors"
-              onClick={closeCompose}
-            >
-              <i className="fa-solid fa-xmark"></i>
-            </button>
+      {!isMobile && (
+        <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-start justify-center pt-[10vh]">
+          <div
+            className={`bg-surface border border-border-dark rounded-2xl p-5 w-[560px] max-w-[90vw] shadow-[0_20px_60px_rgba(0,0,0,0.5)] ${isComposeClosing ? 'animate-[composeModalOut_0.22s_ease-in_forwards]' : 'animate-[composeModalIn_0.28s_cubic-bezier(0.22,1,0.36,1)_forwards]'}`}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <button
+                className="bg-none border-none cursor-pointer text-text-dim text-xl p-1 hover:text-text-main transition-colors"
+                onClick={closeCompose}
+              >
+                <i className="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+            {composeUI}
           </div>
-          {composeUI}
+          <div className="absolute inset-0 -z-10" onClick={closeCompose} />
         </div>
-        <div className="absolute inset-0 -z-10" onClick={closeCompose} />
-      </div>
+      )}
 
       {/* Mobile: full-screen slide-up sheet */}
-      <div 
-        className={`md:hidden fixed top-0 left-0 right-0 z-[9999] bg-surface flex flex-col ${isComposeClosing ? 'animate-[composeSheetOut_0.26s_cubic-bezier(0.4,0,1,1)_forwards]' : 'animate-[composeSheetIn_0.34s_cubic-bezier(0.22,1,0.36,1)_forwards]'}`}
-        style={{ height: viewportHeight }}
-      >
-        <div className="flex-1 overflow-y-auto overflow-x-hidden p-4">
-          {composeUI}
+      {isMobile && (
+        <div 
+          className={`fixed top-0 left-0 right-0 z-[9999] bg-surface flex flex-col ${isComposeClosing ? 'animate-[composeSheetOut_0.26s_cubic-bezier(0.4,0,1,1)_forwards]' : 'animate-[composeSheetIn_0.34s_cubic-bezier(0.22,1,0.36,1)_forwards]'}`}
+          style={{ height: viewportHeight }}
+        >
+          <div className="flex-1 overflow-y-auto overflow-x-hidden p-4">
+            {composeUI}
+          </div>
+          {mobileToolbar}
         </div>
-        {mobileToolbar}
-      </div>
+      )}
     </>,
     document.body
   ) : null
