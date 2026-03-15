@@ -90,13 +90,16 @@ export default function Notifications() {
   }
 
   const getNotificationIcon = (type) => {
+    const isMention = type === 'mention' || type === 'comment_mention'
+    const iconStyle = { fontSize: isMention ? '15px' : '12px' }
+    
     switch (type) {
-      case 'like': return <span className="material-symbols-outlined filled">favorite</span>
-      case 'comment': return <span className="material-symbols-outlined filled">chat_bubble</span>
-      case 'follow': return <span className="material-symbols-outlined filled">person_add</span>
-      case 'mention': return <span className="material-symbols-outlined filled">alternate_email</span>
-      case 'comment_mention': return <span className="material-symbols-outlined filled">alternate_email</span>
-      default: return <span className="material-symbols-outlined filled">notifications</span>
+      case 'like': return <span className="material-symbols-outlined filled" style={iconStyle}>favorite</span>
+      case 'comment': return <span className="material-symbols-outlined filled" style={iconStyle}>chat_bubble</span>
+      case 'follow': return <span className="material-symbols-outlined filled" style={iconStyle}>person_add</span>
+      case 'mention': return <span className="material-symbols-outlined filled" style={iconStyle}>alternate_email</span>
+      case 'comment_mention': return <span className="material-symbols-outlined filled" style={iconStyle}>alternate_email</span>
+      default: return <span className="material-symbols-outlined filled" style={iconStyle}>notifications</span>
     }
   }
 
