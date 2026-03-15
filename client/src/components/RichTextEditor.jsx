@@ -1,9 +1,17 @@
 import { useRef, useEffect, useCallback } from 'react'
 
-export default function RichTextEditor({ content, onChange, placeholder, textareaRef, minHeight = '100px', style = {}, onKeyDown }) {
+export default function RichTextEditor({ content, onChange, placeholder, textareaRef, minHeight = '100px', style = {}, onKeyDown, autoFocus }) {
   const editorRef = useRef(null)
   const isComposingRef = useRef(false)
   const isInternalUpdate = useRef(false)
+
+  useEffect(() => {
+    if (autoFocus && editorRef.current) {
+      setTimeout(() => {
+        editorRef.current.focus()
+      }, 50)
+    }
+  }, [autoFocus])
 
   // Convert plain text to HTML with styled spans
   const textToHtml = (text) => {
