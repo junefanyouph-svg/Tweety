@@ -210,6 +210,14 @@ export default function Sidebar() {
             )}
           </button>
         ))}
+        
+        <button
+          className="mt-2 flex items-center justify-center gap-2 p-3.5 px-6 rounded-full bg-primary text-white border-none font-bold text-[1.05rem] cursor-pointer shadow-[0_4px_14px_rgba(0,191,166,0.35)] hover:scale-105 active:scale-95 transition-all w-full"
+          onClick={() => window.dispatchEvent(new CustomEvent('openCompose'))}
+        >
+          <i className="fa-solid fa-feather"></i>
+          <span className="hidden xl:inline">Compose</span>
+        </button>
       </nav>
 
       <div className="mt-auto flex flex-col gap-3">

@@ -167,10 +167,10 @@ export default function BottomNav() {
   const isActive = (path) => location.pathname === path
 
   const navItems = [
-    { icon: 'fa-solid fa-house', path: '/feed' },
-    { icon: 'fa-solid fa-magnifying-glass', path: '/search' },
-    { icon: 'fa-solid fa-bell', path: '/notifications', badge: unreadCount },
-    { icon: 'fa-solid fa-envelope', path: '/messages', badge: unreadMsgCount },
+    { activeIcon: 'fa-solid fa-house', inactiveIcon: 'fa-solid fa-house fa-hollow text-text-dim', path: '/feed' },
+    { activeIcon: 'fa-solid fa-magnifying-glass font-bold shadow-md', inactiveIcon: 'fa-solid fa-magnifying-glass fa-hollow text-text-dim', path: '/search' },
+    { activeIcon: 'fa-solid fa-bell', inactiveIcon: 'fa-regular fa-bell text-text-dim', path: '/notifications', badge: unreadCount },
+    { activeIcon: 'fa-solid fa-envelope', inactiveIcon: 'fa-regular fa-envelope text-text-dim', path: '/messages', badge: unreadMsgCount },
   ]
 
   const toggleTheme = async () => {
@@ -275,7 +275,7 @@ export default function BottomNav() {
             }}
           >
             <div className="relative inline-block">
-              <i className={`${item.icon} text-[1.4rem]`}></i>
+              <i className={`${isActive(item.path) ? item.activeIcon : item.inactiveIcon} text-[1.4rem] transition-all`}></i>
               {item.badge > 0 && (
                 <span className="absolute -top-1.5 -right-2 bg-primary text-white rounded-full w-4 h-4 flex items-center justify-center text-[0.65rem] font-bold ring-2 ring-bg-dark">{item.badge}</span>
               )}

@@ -246,8 +246,9 @@ export default function Profile() {
   )
 
   return (
-    <PullToRefresh onRefresh={handleRefresh}>
-      <div className="max-w-[620px] mx-auto px-3 w-full box-border pb-8">
+    <>
+      <PullToRefresh onRefresh={handleRefresh}>
+        <div className="max-w-[620px] mx-auto px-3 w-full box-border pb-8">
         {/* Profile Card */}
         <div className="bg-surface rounded-2xl p-6 my-5 border border-border-dark flex gap-5 items-start max-sm:flex-col">
           <div
@@ -442,5 +443,15 @@ export default function Profile() {
         )}
       </div>
     </PullToRefresh>
+
+      {/* Floating Compose Button (FAB) */}
+      <button
+        className="fixed z-[150] w-[56px] h-[56px] rounded-full bg-primary text-white border-none shadow-[0_6px_24px_rgba(0,191,166,0.4)] cursor-pointer flex items-center justify-center text-[1.4rem] hover:scale-105 active:scale-95 transition-all bottom-[100px] right-5 md:bottom-10 md:right-10"
+        onClick={() => window.dispatchEvent(new CustomEvent('openCompose'))}
+        aria-label="Create post"
+      >
+        <i className="fa-solid fa-plus"></i>
+      </button>
+    </>
   )
 }

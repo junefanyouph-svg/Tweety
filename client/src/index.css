@@ -628,4 +628,10 @@ html.light-mode {
   to {
     transform: translateY(100%);
   }
+}
+
+/* Hollow Icon Hack for FA Free */
+.fa-hollow {
+  -webkit-text-stroke: 1.5px currentColor;
+  color: transparent !important;
 }
