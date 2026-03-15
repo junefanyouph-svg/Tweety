@@ -302,28 +302,13 @@ export default function Profile() {
                 <h2 className="text-[1.3rem] font-bold text-text-main truncate">{profile?.display_name || username}</h2>
                 <p className="text-primary text-[0.85rem]">@{username}</p>
               </div>
-              {isOwnProfile ? (
+              {isOwnProfile && (
                 <button
                   className="py-1.5 px-3 bg-white/5 text-text-main border border-border-dark rounded-lg text-[0.85rem] font-bold hover:bg-white/10 transition-colors shrink-0"
                   onClick={() => setIsEditing(true)}
                 >
                   Edit Profile
                 </button>
-              ) : (
-                <div className="flex gap-2">
-                  <button
-                    className={`py-1.5 px-5 rounded-lg text-[0.85rem] font-bold border transition-all ${isFollowing ? 'border-primary text-primary hover:bg-primary/10' : 'bg-primary text-white border-primary hover:opacity-90 active:scale-95'}`}
-                    onClick={handleFollow}
-                  >
-                    {isFollowing ? 'Unfollow' : followsMe ? 'Follow Back' : 'Follow'}
-                  </button>
-                  <button
-                    className="p-2 px-2.5 bg-white/5 text-text-dim border border-border-dark rounded-lg hover:bg-white/10 transition-colors"
-                    onClick={() => navigate(`/messages/${profile.user_id}`)}
-                  >
-                    <i className="fa-solid fa-envelope"></i>
-                  </button>
-                </div>
               )}
             </div>
 
@@ -362,6 +347,23 @@ export default function Profile() {
               </div>
             ) : (
               <p className="text-text-main/80 text-[0.95rem] leading-relaxed my-3 mb-4">{profile?.bio || 'No bio yet.'}</p>
+            )}
+
+            {!isOwnProfile && (
+              <div className="flex gap-2 mb-5">
+                <button
+                  className={`py-1.5 px-5 rounded-lg text-[0.85rem] font-bold border transition-all ${isFollowing ? 'border-primary text-primary hover:bg-primary/10' : 'bg-primary text-white border-primary hover:opacity-90 active:scale-95'}`}
+                  onClick={handleFollow}
+                >
+                  {isFollowing ? 'Unfollow' : followsMe ? 'Follow Back' : 'Follow'}
+                </button>
+                <button
+                  className="py-1.5 px-5 bg-white/5 text-text-main border border-border-dark rounded-lg text-[0.85rem] font-bold hover:bg-white/10 transition-colors"
+                  onClick={() => navigate(`/messages/${profile.user_id}`)}
+                >
+                  Message
+                </button>
+              </div>
             )}
 
             <div className="flex items-center gap-4 flex-wrap text-text-dim text-[0.85rem]">
