@@ -18,6 +18,7 @@
 - `server/routes/`: domain routers (`posts`, `comments`, `likes`, `profiles`, `followers`, `notifications`, `settings`).
 - `server/supabase.js`: service-role Supabase client from env vars.
 - Root utility scripts (`fix*.js`, `add_*.js`, `inject_final.js`, `repair.js`) are one-off maintenance scripts.
+- `client/public/`: static assets including PWA manifest (`manifest.json`), service worker (`sw.js`), and app icons.
 
 ### Environment & Configuration
 - Server reads root `.env` via `require('dotenv').config({ path: '../.env' })`.
@@ -68,3 +69,6 @@
 - Frontend commands (`client/`): `npm run dev`, `npm run build`, `npm run lint`, `npm run preview`.
 - Backend start (`server/`): `node index.js`.
 - Backend test scripts in `server/` are manual diagnostics, not a full automated test suite.
+
+### Mandatory Workflow Rule
+- **Always git push**: Immediately after any commit, you MUST run `git push origin main` (or your current branch) to ensure the remote repository is in sync with the local environment. Never leave commits unpushed.

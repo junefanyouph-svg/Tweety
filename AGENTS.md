@@ -8,6 +8,7 @@ This repo is split into `client/` (React + Vite frontend) and `server/` (Express
 - `client/src/utils/`: client-side helpers and realtime/cache utilities.
 - `server/routes/`: API domains (`posts`, `likes`, `comments`, `profiles`, etc.).
 - `server/index.js`: API entry point (`http://localhost:3001`).
+- `client/public/`: static assets including PWA manifest, service worker, and app icons.
 - Root `.env`: shared runtime configuration used by the server.
 
 ## Build, Test, and Development Commands
@@ -43,5 +44,6 @@ There is no formal unit-test framework configured yet.
 Git history is unavailable in this workspace, so follow a consistent convention going forward.
 - Commit format: `type(scope): short summary` (for example `feat(feed): add mention badge`).
 - Keep commits atomic and focused by package (`client` or `server`).
+- **Mandatory Push**: Always run `git push` immediately after committing changes to ensure the remote repository is updated.
 - PRs should include: purpose, key changes, local verification steps, related issue, and UI screenshots for visual changes.
 - Note any `.env` or schema requirements explicitly in the PR description.
