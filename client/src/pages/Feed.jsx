@@ -31,6 +31,7 @@ export default function Feed() {
   const [showCompose, setShowCompose] = useState(false)
   const [isComposeClosing, setIsComposeClosing] = useState(false)
   const [userProfile, setUserProfile] = useState(null)
+  const [viewportHeight, setViewportHeight] = useState('100dvh')
   const fileInputRef = useRef(null)
   const textareaRef = useRef(null)
   const composeBoxRef = useRef(null)
@@ -69,6 +70,12 @@ export default function Feed() {
   useEffect(() => {
     getUser()
     fetchPosts()
+
+    if (typeof window !== 'undefined' && window.visualViewport) {
+      const updateVp = () => setViewportHeight(`${window.visualViewport.height}px`)
+      window.visualViewport.addEventListener('resize', updateVp)
+      updateVp()
+    }
 
     const channel = supabase
       .channel(`feed-posts-${Math.random()}`)
@@ -306,6 +313,9 @@ export default function Feed() {
   const openCompose = () => {
     setIsComposeClosing(false)
     setShowCompose(true)
+    setTimeout(() => {
+      textareaRef.current?.focus()
+    }, 50)
   }
 
   const closeCompose = () => {
@@ -430,33 +440,33 @@ export default function Feed() {
         </div>
       )}
 
-      {/* Bottom toolbar */}
-      <div className={`flex justify-between items-center mt-3 pt-3 border-t border-border-dark ${isMobile ? 'fixed bottom-0 left-0 right-0 bg-surface px-4 py-3 border-t border-border-dark z-[10] pb-[calc(12px+env(safe-area-inset-bottom))]' : ''}`}>
-        <div className="flex gap-1 items-center">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handleImageSelect}
-          />
-          <button
-            className="bg-none border-none cursor-pointer text-primary text-[1.1rem] p-2 hover:bg-primary/10 rounded-lg transition-colors"
-            onClick={() => fileInputRef.current.click()}
-            title="Upload image"
-          >
-            <i className="fa-solid fa-image"></i>
-          </button>
-          <button
-            className="bg-none border-none cursor-pointer text-primary p-2 hover:bg-primary/10 rounded-lg transition-colors flex items-center"
-            onClick={() => setShowGifPicker(true)}
-            title="Add GIF"
-          >
-            <span className="font-bold text-[0.85rem] border-2 border-primary rounded-md px-1 py-0.5">GIF</span>
-          </button>
-        </div>
+      {/* Desktop Bottom toolbar */}
+      {!isMobile && (
+        <div className="flex justify-between items-center mt-3 pt-3 border-t border-border-dark">
+          <div className="flex gap-1 items-center">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleImageSelect}
+            />
+            <button
+              className="bg-none border-none cursor-pointer text-primary text-[1.1rem] p-2 hover:bg-primary/10 rounded-lg transition-colors"
+              onClick={() => fileInputRef.current.click()}
+              title="Upload image"
+            >
+              <i className="fa-solid fa-image"></i>
+            </button>
+            <button
+              className="bg-none border-none cursor-pointer text-primary p-2 hover:bg-primary/10 rounded-lg transition-colors flex items-center"
+              onClick={() => setShowGifPicker(true)}
+              title="Add GIF"
+            >
+              <span className="font-bold text-[0.85rem] border-2 border-primary rounded-md px-1 py-0.5">GIF</span>
+            </button>
+          </div>
 
-        {!isMobile && (
           <div className="flex items-center gap-3">
             <span className={`text-[0.85rem] ${content.length > 260 ? 'text-red-500 font-bold' : 'text-text-dim'}`}>
               {content.length}/280
@@ -469,16 +479,42 @@ export default function Feed() {
               {uploading ? 'Posting...' : 'Post'}
             </button>
           </div>
-        )}
-
-        {isMobile && (
-          <span className={`text-[0.85rem] ${content.length > 260 ? 'text-red-500 font-bold' : 'text-text-dim'}`}>
-            {content.length}/280
-          </span>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
+
+  const mobileToolbar = isMobile ? (
+    <div className="flex justify-between items-center px-4 py-3 border-t border-border-dark bg-surface shrink-0 mt-auto">
+      <div className="flex gap-1 items-center">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleImageSelect}
+        />
+        <button
+          className="bg-none border-none cursor-pointer text-primary text-[1.1rem] p-2 hover:bg-primary/10 rounded-lg transition-colors"
+          onClick={() => fileInputRef.current.click()}
+          title="Upload image"
+        >
+          <i className="fa-solid fa-image"></i>
+        </button>
+        <button
+          className="bg-none border-none cursor-pointer text-primary p-2 hover:bg-primary/10 rounded-lg transition-colors flex items-center"
+          onClick={() => setShowGifPicker(true)}
+          title="Add GIF"
+        >
+          <span className="font-bold text-[0.85rem] border-2 border-primary rounded-md px-1 py-0.5">GIF</span>
+        </button>
+      </div>
+
+      <span className={`text-[0.85rem] ${content.length > 260 ? 'text-red-500 font-bold' : 'text-text-dim'}`}>
+        {content.length}/280
+      </span>
+    </div>
+  ) : null
 
   const composeOverlay = showCompose ? createPortal(
     <>
@@ -502,56 +538,63 @@ export default function Feed() {
       </div>
 
       {/* Mobile: full-screen slide-up sheet */}
-      <div className={`md:hidden fixed inset-0 z-[9999] bg-surface flex flex-col ${isComposeClosing ? 'animate-[composeSheetOut_0.26s_cubic-bezier(0.4,0,1,1)_forwards]' : 'animate-[composeSheetIn_0.34s_cubic-bezier(0.22,1,0.36,1)_forwards]'}`}>
-        <div className="flex-1 overflow-y-auto p-4 pb-[80px]">
+      <div 
+        className={`md:hidden fixed top-0 left-0 right-0 z-[9999] bg-surface flex flex-col ${isComposeClosing ? 'animate-[composeSheetOut_0.26s_cubic-bezier(0.4,0,1,1)_forwards]' : 'animate-[composeSheetIn_0.34s_cubic-bezier(0.22,1,0.36,1)_forwards]'}`}
+        style={{ height: viewportHeight }}
+      >
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-4">
           {composeUI}
         </div>
+        {mobileToolbar}
       </div>
     </>,
     document.body
   ) : null
 
   return (
-    <PullToRefresh onRefresh={fetchPosts}>
-      <div className="max-w-[620px] mx-auto px-3 w-full box-border">
+    <>
+      <PullToRefresh onRefresh={fetchPosts}>
+        <div className="max-w-[620px] mx-auto px-3 w-full box-border pb-6">
 
-        {/* GIF Picker Modal */}
-        {showGifPicker && (
-          <GifPicker
-            onSelect={handleGifSelect}
-            onClose={() => setShowGifPicker(false)}
-          />
-        )}
+          {/* GIF Picker Modal */}
+          {showGifPicker && (
+            <GifPicker
+              onSelect={handleGifSelect}
+              onClose={() => setShowGifPicker(false)}
+            />
+          )}
 
-        {/* Posts Feed */}
-        <div className="flex flex-col gap-[5px] pb-8 pt-3">
-          {loading
-            ? Array(4).fill(0).map((_, i) => <PostSkeleton key={i} />)
-            : posts.length === 0
-              ? <p className="text-center text-text-dim mt-8 text-[0.95rem]">No posts yet. Be the first! 🚀</p>
-              : posts.map(post => (
-                <PostCard
-                  key={post.id}
-                  post={post}
-                  user={user}
-                  onDelete={handleDelete}
-                  onNavigate={() => navigate(`/post/${post.id}`, { state: { from: '/feed', fromLabel: 'Feed' } })}
-                />
-              ))
-          }
+          {/* Posts Feed */}
+          <div className="flex flex-col gap-[5px] pb-8 pt-3">
+            {loading
+              ? Array(4).fill(0).map((_, i) => <PostSkeleton key={i} />)
+              : posts.length === 0
+                ? <p className="text-center text-text-dim mt-8 text-[0.95rem]">No posts yet. Be the first! 🚀</p>
+                : posts.map(post => (
+                  <PostCard
+                    key={post.id}
+                    post={post}
+                    user={user}
+                    onDelete={handleDelete}
+                    onNavigate={() => navigate(`/post/${post.id}`, { state: { from: '/feed', fromLabel: 'Feed' } })}
+                  />
+                ))
+            }
+          </div>
+
         </div>
+      </PullToRefresh>
 
-        {/* Floating Compose Button (FAB) */}
-        <button
-          className="fixed z-[150] w-14 h-14 rounded-full bg-primary text-white border-none shadow-[0_6px_24px_rgba(0,191,166,0.4)] cursor-pointer flex items-center justify-center text-2xl hover:scale-105 active:scale-95 transition-all bottom-[100px] right-5 md:bottom-10 md:right-10"
-          onClick={openCompose}
-          aria-label="Create post"
-        >
-          <i className="fa-solid fa-plus"></i>
-        </button>
+      {/* Floating Compose Button (FAB) relative to viewport */}
+      <button
+        className="fixed z-[150] w-[56px] h-[56px] rounded-full bg-primary text-white border-none shadow-[0_6px_24px_rgba(0,191,166,0.4)] cursor-pointer flex items-center justify-center text-[1.4rem] hover:scale-105 active:scale-95 transition-all bottom-[100px] right-5 md:bottom-10 md:right-10"
+        onClick={openCompose}
+        aria-label="Create post"
+      >
+        <i className="fa-solid fa-plus"></i>
+      </button>
 
-        {composeOverlay}
-      </div>
-    </PullToRefresh>
+      {composeOverlay}
+    </>
   )
 }
