@@ -1,9 +1,11 @@
-const CACHE_NAME = 'tweety-v1'
+const CACHE_NAME = 'jargon-v1'
 
 // Assets to pre-cache on install
 const PRECACHE_URLS = [
   '/',
-  '/index.html'
+  '/index.html',
+  '/Jargon(Logo).png',
+  '/manifest.json'
 ]
 
 // Install: pre-cache essential shell
