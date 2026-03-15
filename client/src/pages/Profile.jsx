@@ -347,7 +347,6 @@ export default function Profile() {
 
             <div className="flex items-center gap-4 flex-wrap text-text-dim text-[0.85rem]">
               <span className="flex items-center gap-1.5">
-                <i className="fa-solid fa-calendar opacity-50"></i>
                 Joined {new Date(profile?.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
               </span>
               {followsMe && !isOwnProfile && <span className="bg-white/10 px-1.5 py-0.5 rounded text-[0.7rem] uppercase tracking-wider font-bold">Follows you</span>}
