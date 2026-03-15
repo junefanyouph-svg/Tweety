@@ -1,10 +1,10 @@
-# Tweety
+# Jargon
 
 A sleek, modern, and highly interactive social media platform built for speed and real-time engagement.
 
 ## 🚀 Overview
 
-Tweety is a full-stack social media application designed to provide a premium user experience. It features a responsive design, real-time updates via Supabase, and advanced threading capabilities for deep conversations.
+Jargon is a full-stack social media application designed to provide a premium user experience. It features a responsive design, real-time updates via Supabase, and advanced threading capabilities for deep conversations.
 
 ### Key Features
 
@@ -24,7 +24,7 @@ Tweety is a full-stack social media application designed to provide a premium us
 
 ## 📱 Mobile Installation (PWA)
 
-Tweety is a Progressive Web App. To enjoy the full-screen experience:
+Jargon is a Progressive Web App. To enjoy the full-screen experience:
 - **iOS Safari**: Tap the **Share** button (□↑) → **"Add to Home Screen"**.
 - **Android Chrome**: Tap the **⋮ menu** → **"Install App"**.
 

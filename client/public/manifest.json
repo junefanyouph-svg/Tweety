@@ -1,6 +1,6 @@
 {
-  "name": "Tweety",
-  "short_name": "Tweety",
+  "name": "Jargon",
+  "short_name": "Jargon",
   "description": "A social media experience",
   "start_url": "/",
   "display": "standalone",

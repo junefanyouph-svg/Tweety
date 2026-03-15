@@ -1,4 +1,4 @@
-## Tweety Project Guidelines (Updated March 2026)
+## Jargon Project Guidelines (Updated March 2026)
 
 ### Tech Stack & Architecture
 - Frontend: React 19 + Vite 7 in `client/`.

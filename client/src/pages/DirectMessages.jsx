@@ -149,7 +149,7 @@ export default function DirectMessages() {
                     <div style={styles.emptyState}>
                         <i className="fa-solid fa-envelope-open" style={styles.emptyIcon}></i>
                         <h3 style={{ color: '#e8e8e8', fontSize: '1.2rem', fontWeight: 'bold' }}>Welcome to your inbox!</h3>
-                        <p style={styles.emptyText}>Drop a line, share a Tweet, and more with private conversations between you and others on Tweety.</p>
+                        <p style={styles.emptyText}>Drop a line, share a message, and more with private conversations between you and others on Jargon.</p>
                         <button
                             onClick={() => setShowModal(true)}
                             style={{

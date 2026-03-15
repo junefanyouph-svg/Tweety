@@ -32,7 +32,10 @@ export default function ForgotPassword() {
 
   return (
     <div style={loginStyles.container}>
-      <h1 style={loginStyles.logo}>🐦 Tweety</h1>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', marginBottom: '20px' }}>
+        <img src="/icon-192.png" alt="Jargon Logo" style={{ width: '80px', height: '80px', objectFit: 'contain' }} />
+        <h1 style={{ ...loginStyles.logo, marginBottom: 0 }}>Jargon</h1>
+      </div>
       <form onSubmit={handleSubmit} style={loginStyles.form}>
         <input
           style={loginStyles.input}
