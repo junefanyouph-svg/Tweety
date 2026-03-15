@@ -344,8 +344,17 @@ export default function Feed() {
   useEffect(() => {
     if (!showCompose) return
 
-    // Lock body scroll
-    const prevOverflow = document.body.style.overflow
+    // Lock body scroll tightly for mobile
+    const scrollY = window.scrollY
+    const originalStyle = window.getComputedStyle(document.body)
+    const prevPosition = originalStyle.position
+    const prevTop = originalStyle.top
+    const prevWidth = originalStyle.width
+    const prevOverflow = originalStyle.overflow
+
+    document.body.style.position = 'fixed'
+    document.body.style.top = `-${scrollY}px`
+    document.body.style.width = '100%'
     document.body.style.overflow = 'hidden'
 
     // Push a fake history entry so hardware "back" closes compose
@@ -356,7 +365,11 @@ export default function Feed() {
     window.addEventListener('popstate', handlePopState)
 
     return () => {
+      document.body.style.position = prevPosition
+      document.body.style.top = prevTop
+      document.body.style.width = prevWidth
       document.body.style.overflow = prevOverflow
+      window.scrollTo(0, scrollY)
       window.removeEventListener('popstate', handlePopState)
     }
   }, [showCompose])
@@ -553,13 +566,14 @@ export default function Feed() {
       {/* Mobile: full-screen slide-up sheet */}
       {isMobile && (
         <div 
-          className={`fixed top-0 left-0 right-0 z-[9999] bg-surface flex flex-col ${isComposeClosing ? 'animate-[composeSheetOut_0.26s_cubic-bezier(0.4,0,1,1)_forwards]' : 'animate-[composeSheetIn_0.34s_cubic-bezier(0.22,1,0.36,1)_forwards]'}`}
-          style={{ height: viewportHeight }}
+          className={`fixed inset-0 z-[9999] bg-surface ${isComposeClosing ? 'animate-[composeSheetOut_0.26s_cubic-bezier(0.4,0,1,1)_forwards]' : 'animate-[composeSheetIn_0.34s_cubic-bezier(0.22,1,0.36,1)_forwards]'}`}
         >
-          <div className="flex-1 overflow-y-auto overflow-x-hidden p-4">
-            {composeUI}
+          <div className="flex flex-col w-full h-full" style={{ height: viewportHeight }}>
+            <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 pb-0">
+              {composeUI}
+            </div>
+            {mobileToolbar}
           </div>
-          {mobileToolbar}
         </div>
       )}
     </>,
