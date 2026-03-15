@@ -543,7 +543,7 @@ export default function Feed() {
 
         {/* Floating Compose Button (FAB) */}
         <button
-          className="fixed z-[150] w-14 h-14 rounded-full bg-primary text-white border-none shadow-[0_6px_24px_rgba(0,191,166,0.4)] cursor-pointer flex items-center justify-center text-2xl hover:scale-105 active:scale-95 transition-all bottom-[calc(80px+env(safe-area-inset-bottom))] right-5 md:bottom-8 md:right-8"
+          className="fixed z-[150] w-14 h-14 rounded-full bg-primary text-white border-none shadow-[0_6px_24px_rgba(0,191,166,0.4)] cursor-pointer flex items-center justify-center text-2xl hover:scale-105 active:scale-95 transition-all bottom-[100px] right-5 md:bottom-10 md:right-10"
           onClick={openCompose}
           aria-label="Create post"
         >
