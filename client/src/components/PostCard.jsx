@@ -112,8 +112,9 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [toast, setToast] = useState(false)
   const [heartAnim, setHeartAnim] = useState(false)
-  const [authorDisplayName, setAuthorDisplayName] = useState(post.profiles?.display_name || null)
-  const [authorAvatarUrl, setAuthorAvatarUrl] = useState(post.profiles?.avatar_url || null)
+  const [authorDisplayName, setAuthorDisplayName] = useState(post.profiles?.display_name || post.display_name || null)
+  const [authorAvatarUrl, setAuthorAvatarUrl] = useState(post.profiles?.avatar_url || post.avatar_url || null)
+  const postUsername = post.profiles?.username || post.username || null
   const [animatingCommentId, setAnimatingCommentId] = useState(null)
   const [collapsedThreads, setCollapsedThreads] = useState([])
   const [showMentionPicker, setShowMentionPicker] = useState(false)
@@ -144,7 +145,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
     if (data) { likesRef.current = data; setLikes(data) }
   }
   fetchFnRef.current.fetchComments = async () => {
-    const { data } = await supabase.from('comments').select('*, profiles(avatar_url, display_name), comment_likes(user_id)').eq('post_id', post.id).order('created_at', { ascending: true })
+    const { data } = await supabase.from('comments').select('*, profiles(username, avatar_url, display_name), comment_likes(user_id)').eq('post_id', post.id).order('created_at', { ascending: true })
     if (data) { setComments(data); commentsRef.current = data }
   }
 
@@ -166,9 +167,10 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
 
   useEffect(() => {
     if (!authorDisplayName || !authorAvatarUrl) {
-      getProfile(post.username, API_URL).then(d => { if (d) { setAuthorDisplayName(d.display_name || null); setAuthorAvatarUrl(d.avatar_url || null) } })
+      if (!postUsername) return // Avoid calling API with undefined
+      getProfile(postUsername, API_URL).then(d => { if (d) { setAuthorDisplayName(d.display_name || null); setAuthorAvatarUrl(d.avatar_url || null) } })
     }
-  }, [post.username])
+  }, [postUsername])
 
   useEffect(() => {
     return () => {
@@ -564,6 +566,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
     const replies = comments.filter(c => c.parent_id === comment.id);
     const hasReplies = replies.length > 0;
     const isCollapsed = collapsedThreads.includes(comment.id);
+    const commentUsername = comment.profiles?.username || comment.username || null;
 
     return (
       <div key={comment.id} className={depth === 0 ? "border-b border-border-dark relative thread-container" : 'comments-slide ml-12 py-3 bg-surface border-b-0 relative'} style={depth > 0 ? { paddingBottom: isLast ? '16px' : '12px' } : {}} onClick={e => e.stopPropagation()}>
@@ -593,13 +596,13 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
 
         <div id={`comment-${comment.id}`} className={`${depth === 0 ? 'py-4 bg-surface border-b-0' : ''} relative`} style={depth === 0 ? { paddingBottom: (replies.length > 0 || replyingTo === comment.id) ? '12px' : '16px' } : {}}>
           <div className="flex justify-between mb-1.5 items-center">
-            <div className="flex items-center gap-2 relative z-[2] cursor-pointer" onClick={() => navigate(`/profile/${comment.username}`)}>
+            <div className="flex items-center gap-2 relative z-[2] cursor-pointer" onClick={() => commentUsername && navigate(`/profile/${commentUsername}`)}>
               <div className={`relative z-[2] ${depth > 0 ? 'w-8 h-8' : ''}`}>
                 {comment.profiles?.avatar_url
                   ? <img src={comment.profiles.avatar_url} className={`${depth > 0 ? 'w-8 h-8' : 'w-7 h-7'} rounded-full object-cover block`} alt="" />
-                  : <div className={`${depth > 0 ? 'w-8 h-8 flex items-center justify-center text-[0.8rem]' : 'w-7 h-7 flex items-center justify-center text-[0.75rem]'} rounded-full bg-primary text-white`}>{comment.username?.charAt(0)}</div>}
+                  : <div className={`${depth > 0 ? 'w-8 h-8 flex items-center justify-center text-[0.8rem]' : 'w-7 h-7 flex items-center justify-center text-[0.75rem]'} rounded-full bg-primary text-white`}>{commentUsername?.charAt(0)}</div>}
               </div>
-              <div className={depth > 0 ? "flex flex-col" : ""}><span className="font-bold text-[0.85rem] text-text-main">{comment.profiles?.display_name || comment.username}<span className="text-text-dim font-normal text-[0.72rem] ml-1.5">· {formatDate(comment.created_at)}</span></span><span className={`text-[0.75rem] text-text-dim ${depth === 0 ? 'ml-1' : ''}`}>@{comment.username}</span></div>
+              <div className={depth > 0 ? "flex flex-col" : ""}><span className="font-bold text-[0.85rem] text-text-main">{comment.profiles?.display_name || commentUsername}<span className="text-text-dim font-normal text-[0.72rem] ml-1.5">· {formatDate(comment.created_at)}</span></span><span className={`text-[0.75rem] text-text-dim ${depth === 0 ? 'ml-1' : ''}`}>@{commentUsername}</span></div>
             </div>
           </div>
           <div className={depth > 0 ? "ml-10" : "ml-12"}>
@@ -758,9 +761,9 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
       {/* Navigation Wrapper - Clicks here go to the post page */}
       <div onClick={onNavigate} className="cursor-pointer">
         <div className="flex justify-between mb-3 items-center">
-          <div className="flex items-center gap-2.5 cursor-pointer" onClick={(e) => { e.stopPropagation(); navigate(`/profile/${post.username}`) }}>
-            <div className="shrink-0">{authorAvatarUrl ? <img src={authorAvatarUrl} className="w-[38px] h-[38px] rounded-full object-cover border-2 border-border-dark" alt="" /> : <div className="w-[38px] h-[38px] rounded-full bg-primary flex items-center justify-center text-base font-bold text-white">{post.username?.charAt(0)}</div>}</div>
-            <div><div className="font-bold text-text-main text-[0.95rem]">{authorDisplayName || post.username}<span className="text-text-dim font-normal text-[0.78rem] ml-1.5">· {formatDate(post.created_at)}</span></div><div className="text-primary text-[0.78rem]">@{post.username}</div></div>
+          <div className="flex items-center gap-2.5 cursor-pointer" onClick={(e) => { e.stopPropagation(); if (postUsername) navigate(`/profile/${postUsername}`) }}>
+            <div className="shrink-0">{authorAvatarUrl ? <img src={authorAvatarUrl} className="w-[38px] h-[38px] rounded-full object-cover border-2 border-border-dark" alt="" /> : <div className="w-[38px] h-[38px] rounded-full bg-primary flex items-center justify-center text-base font-bold text-white">{postUsername?.charAt(0)}</div>}</div>
+            <div><div className="font-bold text-text-main text-[0.95rem]">{authorDisplayName || postUsername}<span className="text-text-dim font-normal text-[0.78rem] ml-1.5">· {formatDate(post.created_at)}</span></div><div className="text-primary text-[0.78rem]">@{postUsername}</div></div>
           </div>
           <div className="relative" ref={menuRef}>
             <button className="bg-none border-none cursor-pointer text-text-dim text-xl" onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}>

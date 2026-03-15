@@ -15,8 +15,11 @@ export default function Feed() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    getUser()
-    fetchPosts()
+    const init = async () => {
+      await getUser()
+      fetchPosts()
+    }
+    init()
 
     const channel = supabase
       .channel(`feed-posts-${Math.random()}`)
@@ -57,13 +60,30 @@ export default function Feed() {
       return
     }
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('posts_with_user_likes')
       .select('*')
       .order('created_at', { ascending: false })
     
-    setPosts(data || [])
-    setCache('feed-posts', data || [])
+    if (error) {
+      console.error('Error fetching posts:', error)
+      // Fallback to regular posts table if view fails
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from('posts')
+        .select('*, profiles(username, display_name, avatar_url)')
+        .order('created_at', { ascending: false })
+      
+      if (fallbackError) {
+        console.error('Fallback fetch also failed:', fallbackError)
+        setPosts([])
+      } else {
+        setPosts(fallbackData || [])
+        setCache('feed-posts', fallbackData || [])
+      }
+    } else {
+      setPosts(data || [])
+      setCache('feed-posts', data || [])
+    }
     setLoading(false)
   }
 
