@@ -9,6 +9,7 @@ import { getProfile } from '../utils/profileCache'
 import RichTextEditor from './RichTextEditor'
 import { broadcastLike, broadcastComment, broadcastCommentLike } from '../utils/interactionsChannel'
 import { API_URL } from '../utils/apiUrl'
+import { formatDate } from '../utils/formatDate'
 
 function escapeRegExp(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -598,7 +599,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
                   ? <img src={comment.profiles.avatar_url} className={`${depth > 0 ? 'w-8 h-8' : 'w-7 h-7'} rounded-full object-cover block`} alt="" />
                   : <div className={`${depth > 0 ? 'w-8 h-8 flex items-center justify-center text-[0.8rem]' : 'w-7 h-7 flex items-center justify-center text-[0.75rem]'} rounded-full bg-primary text-white`}>{comment.username?.charAt(0)}</div>}
               </div>
-              <div className={depth > 0 ? "flex flex-col" : ""}><span className="font-bold text-[0.85rem] text-text-main">{comment.profiles?.display_name || comment.username}</span><span className={`text-[0.75rem] text-text-dim ${depth === 0 ? 'ml-1' : ''}`}>@{comment.username}</span></div>
+              <div className={depth > 0 ? "flex flex-col" : ""}><span className="font-bold text-[0.85rem] text-text-main">{comment.profiles?.display_name || comment.username}<span className="text-text-dim font-normal text-[0.72rem] ml-1.5">· {formatDate(comment.created_at)}</span></span><span className={`text-[0.75rem] text-text-dim ${depth === 0 ? 'ml-1' : ''}`}>@{comment.username}</span></div>
             </div>
           </div>
           <div className={depth > 0 ? "ml-10" : "ml-12"}>
@@ -759,7 +760,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
         <div className="flex justify-between mb-3 items-center">
           <div className="flex items-center gap-2.5 cursor-pointer" onClick={(e) => { e.stopPropagation(); navigate(`/profile/${post.username}`) }}>
             <div className="shrink-0">{authorAvatarUrl ? <img src={authorAvatarUrl} className="w-[38px] h-[38px] rounded-full object-cover border-2 border-border-dark" alt="" /> : <div className="w-[38px] h-[38px] rounded-full bg-primary flex items-center justify-center text-base font-bold text-white">{post.username?.charAt(0)}</div>}</div>
-            <div><div className="font-bold text-text-main text-[0.95rem]">{authorDisplayName || post.username}</div><div className="text-primary text-[0.78rem]">@{post.username}</div></div>
+            <div><div className="font-bold text-text-main text-[0.95rem]">{authorDisplayName || post.username}<span className="text-text-dim font-normal text-[0.78rem] ml-1.5">· {formatDate(post.created_at)}</span></div><div className="text-primary text-[0.78rem]">@{post.username}</div></div>
           </div>
           <div className="relative" ref={menuRef}>
             <button className="bg-none border-none cursor-pointer text-text-dim text-xl" onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}>
