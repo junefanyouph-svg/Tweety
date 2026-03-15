@@ -71,7 +71,7 @@ export default function SignUp() {
   return (
     <div style={styles.container}>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', marginBottom: '20px' }}>
-        <img src="/Jargon(app-display).svg" alt="Jargon Logo" style={{ width: '60px', height: '60px', objectFit: 'contain' }} />
+        <img src="/Jargon_icon.svg" alt="Jargon Logo" style={{ width: '60px', height: '60px', objectFit: 'contain' }} />
         <h1 style={{ ...styles.logo, marginBottom: 0 }}>Jargon</h1>
       </div>
       <form onSubmit={handleSignUp} style={styles.form}>

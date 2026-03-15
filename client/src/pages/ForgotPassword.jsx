@@ -33,7 +33,7 @@ export default function ForgotPassword() {
   return (
     <div style={loginStyles.container}>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', marginBottom: '20px' }}>
-        <img src="/Jargon(app-display).svg" alt="Jargon Logo" style={{ width: '60px', height: '60px', objectFit: 'contain' }} />
+        <img src="/Jargon_icon.svg" alt="Jargon Logo" style={{ width: '60px', height: '60px', objectFit: 'contain' }} />
         <h1 style={{ ...loginStyles.logo, marginBottom: 0 }}>Jargon</h1>
       </div>
       <form onSubmit={handleSubmit} style={loginStyles.form}>
