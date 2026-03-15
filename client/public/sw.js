@@ -4,7 +4,7 @@ const CACHE_NAME = 'jargon-v1'
 const PRECACHE_URLS = [
   '/',
   '/index.html',
-  '/Jargon(Logo).png',
+  '/Jargon(app-display).svg',
   '/manifest.json'
 ]
 
