@@ -98,7 +98,7 @@ export default function Search() {
       <span style={styles.userHandle}>@{highlightText(u.username, query)}</span>
       {u.bio && <span style={styles.userBio}>{highlightText(u.bio, query)}</span>}
     </div>
-    <i className="fa-solid fa-chevron-right" style={{ color: '#555' }}></i>
+    <span className="material-symbols-outlined filled" style={{ color: '#555' }}>chevron_right</span>
   </div>
 ))
 
@@ -184,7 +184,7 @@ export default function Search() {
 
         {!searched && (
           <div style={styles.emptyState}>
-            <i className="fa-solid fa-magnifying-glass" style={styles.emptyIcon}></i>
+            <span className="material-symbols-outlined filled" style={styles.emptyIcon}>search</span>
             <p style={styles.emptyText}>Search for posts or users</p>
           </div>
         )}

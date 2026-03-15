@@ -50,7 +50,7 @@ export default function GifPicker({ onSelect, onClose }) {
             onChange={handleSearch}
           />
           <button className="bg-none border-none cursor-pointer text-text-dim text-xl p-2 rounded-lg hover:bg-white/10 transition-colors" onClick={onClose}>
-            <i className="fa-solid fa-xmark"></i>
+            <span className="material-symbols-outlined filled">close</span>
           </button>
         </div>
 

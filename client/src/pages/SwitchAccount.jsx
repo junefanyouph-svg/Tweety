@@ -114,7 +114,7 @@ export default function SwitchAccount() {
             {/* Back Button */}
             {currentUserId && (
                 <button style={styles.backBtn} onClick={() => navigate('/feed')}>
-                    <i className="fa-solid fa-arrow-left"></i> Back to Feed
+                    <span className="material-symbols-outlined">arrow_back</span> Back to Feed
                 </button>
             )}
 
@@ -155,7 +155,7 @@ export default function SwitchAccount() {
 
             {switching && (
                 <div style={styles.switchingOverlay}>
-                    <i className="fa-solid fa-rotate" style={{ color: '#00BFA6', fontSize: '2rem', animation: 'spin 1s linear infinite' }} />
+                    <span className="material-symbols-outlined animate-spin" style={{ color: '#00BFA6', fontSize: '2rem' }}>autorenew</span>
                     <span style={styles.switchingText}>Preparing...</span>
                 </div>
             )}
@@ -210,7 +210,7 @@ export default function SwitchAccount() {
                 )}
 
                 <div style={styles.addAccount} onClick={handleAddAccount}>
-                    <i className="fa-solid fa-plus" />
+                    <span className="material-symbols-outlined">add</span>
                     Add an existing account
                 </div>
             </div>

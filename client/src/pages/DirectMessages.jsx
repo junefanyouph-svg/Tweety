@@ -127,7 +127,7 @@ export default function DirectMessages() {
                     style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#00BFA6', fontSize: '1.2rem', cursor: 'pointer' }}
                     onClick={() => setShowModal(true)}
                 >
-                    <i className="fa-solid fa-envelope-circle-check"></i>
+                    <span className="material-symbols-outlined filled">mark_email_read</span>
                 </button>
             </header>
 
@@ -147,7 +147,7 @@ export default function DirectMessages() {
             <div style={styles.list}>
                 {conversations.length === 0 ? (
                     <div style={styles.emptyState}>
-                        <i className="fa-solid fa-envelope-open" style={styles.emptyIcon}></i>
+                        <span className="material-symbols-outlined filled" style={styles.emptyIcon}>drafts</span>
                         <h3 style={{ color: '#e8e8e8', fontSize: '1.2rem', fontWeight: 'bold' }}>Welcome to your inbox!</h3>
                         <p style={styles.emptyText}>Drop a line, share a message, and more with private conversations between you and others on Jargon.</p>
                         <button

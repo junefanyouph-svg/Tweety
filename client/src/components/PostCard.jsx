@@ -627,13 +627,13 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
             {comment.image_url && <img src={comment.image_url} className="mt-2 max-w-[60%] max-h-[150px] object-contain rounded-lg cursor-pointer" alt="" onClick={() => setViewingImage(comment.image_url)} />}
             <div className="flex gap-4 mt-2 items-center">
               <button className={`bg-none border-none cursor-pointer text-[0.8rem] flex items-center gap-1 transition-colors ${comment.comment_likes?.some(l => l.user_id === user?.id) ? 'text-[#e0245e]' : 'text-text-dim'} ${animatingCommentId === comment.id ? 'heart-bounce' : ''}`} onClick={() => handleCommentLike(comment)}>
-                <i className={`fa-${comment.comment_likes?.some(l => l.user_id === user?.id) ? 'solid' : 'regular'} fa-heart`}></i> <span className={comment.comment_likes?.some(l => l.user_id === user?.id) ? 'font-bold' : 'font-normal'}>{comment.comment_likes?.length || 0}</span>
+                <span className={`material-symbols-outlined text-[1.1rem] ${comment.comment_likes?.some(l => l.user_id === user?.id) ? 'filled text-[#e0245e]' : ''}`}>favorite</span> <span className={comment.comment_likes?.some(l => l.user_id === user?.id) ? 'font-bold' : 'font-normal'}>{comment.comment_likes?.length || 0}</span>
               </button>
               <button className="bg-none border-none cursor-pointer text-[0.8rem] text-text-dim flex items-center gap-1 hover:text-primary transition-colors" onClick={() => {
                 setReplyingTo(replyingTo === comment.id ? null : comment.id);
                 setReplyContent(comment.username === user?.username ? '' : `@${comment.username} `);
                 if (collapsedThreads.includes(comment.id)) { toggleCollapse(comment.id); }
-              }}><i className="fa-solid fa-reply"></i></button>
+              }}><span className="material-symbols-outlined filled">reply</span></button>
               {user?.id === comment.user_id && (
                 <>
                   <button
@@ -641,14 +641,14 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
                     title="Edit comment"
                     onClick={() => { setEditingComment(comment.id); setEditCommentText(comment.content) }}
                   >
-                    <i className="fa-solid fa-pen"></i>
+                    <span className="material-symbols-outlined filled">edit</span>
                   </button>
                   <button
                     className="bg-none border-none cursor-pointer text-[0.78rem] text-text-dim flex items-center gap-1 hover:text-red-500 transition-colors"
                     title="Delete comment"
                     onClick={() => { setDeletingCommentId(comment.id); openDeleteDialog('comment', `comment-${comment.id}`) }}
                   >
-                    <i className="fa-solid fa-trash"></i>
+                    <span className="material-symbols-outlined filled">delete</span>
                   </button>
                 </>
               )}
@@ -681,16 +681,16 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
               />
               <div className="pill-input-outer relative">
                 <button className="circle-action-btn" onClick={() => setShowMediaMenu(showMediaMenu === comment.id ? null : comment.id)}>
-                  <i className={`fa-solid ${showMediaMenu === comment.id ? 'fa-xmark' : 'fa-plus'}`}></i>
+                  <span className={`material-symbols-outlined text-[1.1rem]`}>{showMediaMenu === comment.id ? 'close' : 'add'}</span>
                 </button>
 
                 {showMediaMenu === comment.id && (
                   <div className="media-menu-popover">
                     <div className="media-menu-item" onClick={() => { commentFileRef.current.click(); setShowMediaMenu(null) }}>
-                      <i className="fa-regular fa-image"></i> Image
+                      <span className="material-symbols-outlined">image</span> Image
                     </div>
                     <div className="media-menu-item" onClick={() => { setShowCommentGifPicker(comment.id); setShowMediaMenu(null) }}>
-                      <i className="fa-solid fa-bolt"></i> GIF
+                      <span className="material-symbols-outlined filled">bolt</span> GIF
                     </div>
                   </div>
                 )}
@@ -702,7 +702,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
                     style={{ flexShrink: 0, backgroundColor: '#00BFA6', color: 'white', border: 'none', pointerEvents: (replyContent.trim() || commentImage || commentGifUrl) ? 'auto' : 'none' }}
                     onClick={() => handleComment(null, comment.id)}
                   >
-                    <i className="fa-solid fa-arrow-up"></i>
+                    <span className="material-symbols-outlined filled">arrow_upward</span>
                   </button>
                 </div>
               </div>
@@ -714,7 +714,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
                       onClick={() => { setCommentImage(null); setCommentImagePreview(null); setCommentGifUrl(null) }}
                       className="absolute top-2 right-2 bg-black/70 text-white border-none rounded-full w-6 h-6 cursor-pointer flex items-center justify-center"
                     >
-                      <i className="fa-solid fa-xmark"></i>
+                      <span className="material-symbols-outlined filled">close</span>
                     </button>
                   </div>
                 </div>
@@ -741,7 +741,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
         {isCollapsed && replies.length > 0 && (
           <div style={{ marginLeft: depth === 0 ? '48px' : '40px', padding: '8px 0' }}>
             <div className="replies-collapsed-badge" onClick={() => toggleCollapse(comment.id)}>
-              <i className="fa-solid fa-chevron-down mr-1.5"></i>
+              <span className="material-symbols-outlined filled mr-1.5">expand_more</span>
               View {replies.length} {replies.length === 1 ? 'reply' : 'replies'}
             </div>
           </div>
@@ -753,7 +753,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
 
   return (
     <div className="bg-surface rounded-xl p-5 border border-border-dark mb-0 relative" id={`post-${post.id}`}>
-      {toast && <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-primary text-white py-3 px-6 rounded-xl z-[99999] flex items-center gap-2"><i className="fa-solid fa-check"></i> Link copied</div>}
+      {toast && <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-primary text-white py-3 px-6 rounded-xl z-[99999] flex items-center gap-2"><span className="material-symbols-outlined filled">check</span> Link copied</div>}
 
       {/* Navigation Wrapper - Clicks here go to the post page */}
       <div onClick={onNavigate} className="cursor-pointer">
@@ -764,15 +764,15 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
           </div>
           <div className="relative" ref={menuRef}>
             <button className="bg-none border-none cursor-pointer text-text-dim text-xl" onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}>
-              <i className="fa-solid fa-ellipsis"></i>
+              <span className="material-symbols-outlined filled">more_horiz</span>
             </button>
             {showMenu && (
               <div className="absolute right-0 top-7 bg-surface border border-border-dark rounded-xl p-1.5 z-[999] min-w-[150px]" onClick={e => e.stopPropagation()}>
-                <button className="flex items-center gap-2 w-full py-2 px-3 bg-none border-none cursor-pointer text-text-main text-[0.9rem] rounded-md hover:bg-primary-dim" onClick={handleCopyLink}><i className="fa-solid fa-link"></i> Copy Link</button>
+                <button className="flex items-center gap-2 w-full py-2 px-3 bg-none border-none cursor-pointer text-text-main text-[0.9rem] rounded-md hover:bg-primary-dim" onClick={handleCopyLink}><span className="material-symbols-outlined filled">link</span> Copy Link</button>
                 {user?.id === post.user_id && (
                   <>
-                    <button className="flex items-center gap-2 w-full py-2 px-3 bg-none border-none cursor-pointer text-text-main text-[0.9rem] rounded-md hover:bg-primary-dim" onClick={() => { setEditPostText(post.content); setEditingPost(true); setShowMenu(false) }}><i className="fa-solid fa-pen"></i> Edit</button>
-                    <button className="flex items-center gap-2 w-full py-2 px-3 bg-none border-none cursor-pointer text-red-500 text-[0.9rem] rounded-md hover:bg-red-500/10" onClick={() => { setShowMenu(false); setShowDeleteModal(true); openDeleteDialog('post', `post-${post.id}`) }}><i className="fa-solid fa-trash"></i> Delete</button>
+                    <button className="flex items-center gap-2 w-full py-2 px-3 bg-none border-none cursor-pointer text-text-main text-[0.9rem] rounded-md hover:bg-primary-dim" onClick={() => { setEditPostText(post.content); setEditingPost(true); setShowMenu(false) }}><span className="material-symbols-outlined filled">edit</span> Edit</button>
+                    <button className="flex items-center gap-2 w-full py-2 px-3 bg-none border-none cursor-pointer text-red-500 text-[0.9rem] rounded-md hover:bg-red-500/10" onClick={() => { setShowMenu(false); setShowDeleteModal(true); openDeleteDialog('post', `post-${post.id}`) }}><span className="material-symbols-outlined filled">delete</span> Delete</button>
                   </>
                 )}
               </div>
@@ -788,8 +788,8 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
       </div>
 
       <div className="flex gap-2 mt-4 items-center border-t border-border-dark pt-3" onClick={(e) => { e.stopPropagation(); toggleComments(); }}>
-        <button className={`bg-none border-none cursor-pointer text-[0.9rem] py-1.5 px-3 rounded-lg flex items-center gap-1.5 hover:bg-primary-dim transition-colors ${likes.some(l => l.user_id === user?.id) ? 'text-[#e0245e]' : 'text-text-dim'} ${heartAnim ? 'heart-bounce' : ''}`} onClick={(e) => { e.stopPropagation(); handleLike(); }}><i className={`fa-${likes.some(l => l.user_id === user?.id) ? 'solid' : 'regular'} fa-heart`}></i> <span>{likes.length}</span></button>
-        <button className={`bg-none border-none cursor-pointer text-[0.9rem] py-1.5 px-3 rounded-lg flex items-center gap-1.5 hover:bg-primary-dim transition-colors ${showComments ? 'text-primary' : 'text-text-dim'}`} onClick={(e) => { e.stopPropagation(); toggleComments(); }}><i className="fa-solid fa-reply"></i> <span>{comments.length}</span></button>
+        <button className={`bg-none border-none cursor-pointer text-[0.9rem] py-1.5 px-3 rounded-lg flex items-center gap-1.5 hover:bg-primary-dim transition-colors ${likes.some(l => l.user_id === user?.id) ? 'text-[#e0245e]' : 'text-text-dim'} ${heartAnim ? 'heart-bounce' : ''}`} onClick={(e) => { e.stopPropagation(); handleLike(); }}><span className={`material-symbols-outlined text-[1.1rem] ${likes.some(l => l.user_id === user?.id) ? 'filled' : ''}`}>favorite</span> <span>{likes.length}</span></button>
+        <button className={`bg-none border-none cursor-pointer text-[0.9rem] py-1.5 px-3 rounded-lg flex items-center gap-1.5 hover:bg-primary-dim transition-colors ${showComments ? 'text-primary' : 'text-text-dim'}`} onClick={(e) => { e.stopPropagation(); toggleComments(); }}><span className="material-symbols-outlined filled">reply</span> <span>{comments.length}</span></button>
       </div>
       {(showComments || closingComments) && (
         <div className={`mt-4 ${closingComments ? 'comments-slide-up' : 'comments-slide'}`} onClick={e => e.stopPropagation()}>
@@ -801,16 +801,16 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
           <div className="mt-8 relative" ref={commentBoxRef}>
             <div className="flex items-center gap-2.5 w-full relative">
               <button className="w-8 h-8 text-[0.9rem] rounded-full border border-white/10 bg-none text-primary flex items-center justify-center cursor-pointer hover:bg-primary/10 hover:border-primary transition-all" onClick={() => setShowMediaMenu(showMediaMenu === 'main' ? null : 'main')}>
-                <i className={`fa-solid ${showMediaMenu === 'main' ? 'fa-xmark' : 'fa-plus'}`}></i>
+                <span className={`material-symbols-outlined text-[1.1rem]`}>{showMediaMenu === 'main' ? 'close' : 'add'}</span>
               </button>
 
               {showMediaMenu === 'main' && (
                 <div className="absolute bottom-[calc(100%+10px)] left-0 bg-surface border border-border-dark rounded-xl p-2 flex flex-col gap-1 shadow-[0_4px_20px_rgba(0,0,0,0.3)] z-[1000] animate-[mediaMenuPop_0.25s_cubic-bezier(0.175,0.885,0.32,1.275)]">
                   <div className="flex items-center gap-2.5 py-2 px-3 rounded-lg text-text-main cursor-pointer hover:bg-primary/10 hover:text-primary transition-colors text-[0.9rem] whitespace-nowrap" onClick={() => { commentFileRef.current.click(); setShowMediaMenu(null) }}>
-                    <i className="fa-regular fa-image"></i> Image
+                    <span className="material-symbols-outlined">image</span> Image
                   </div>
                   <div className="flex items-center gap-2.5 py-2 px-3 rounded-lg text-text-main cursor-pointer hover:bg-primary/10 hover:text-primary transition-colors text-[0.9rem] whitespace-nowrap" onClick={() => { setShowCommentGifPicker('main'); setShowMediaMenu(null) }}>
-                    <i className="fa-solid fa-bolt"></i> GIF
+                    <span className="material-symbols-outlined filled">bolt</span> GIF
                   </div>
                 </div>
               )}
@@ -822,7 +822,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
                   onClick={handleComment}
                   disabled={commentSending}
                 >
-                  <i className="fa-solid fa-arrow-up"></i>
+                  <span className="material-symbols-outlined filled">arrow_upward</span>
                 </button>
               </div>
             </div>
@@ -834,7 +834,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
                     onClick={() => { setCommentImage(null); setCommentImagePreview(null); setCommentGifUrl(null) }}
                     className="absolute top-2 right-2 bg-black/70 text-white border-none rounded-full w-6 h-6 cursor-pointer flex items-center justify-center"
                   >
-                    <i className="fa-solid fa-xmark"></i>
+                    <span className="material-symbols-outlined filled">close</span>
                   </button>
                 </div>
               </div>
@@ -863,7 +863,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
         <div className="fixed inset-0 bg-black/85 z-[99999] flex items-center justify-center backdrop-blur-md" onClick={() => setViewingImage(null)}>
           <div className="relative animate-[popIn_0.3s_ease-out]">
             <button className="absolute -top-10 right-0 text-white cursor-pointer bg-none border-none text-xl hover:text-primary transition-colors" onClick={() => setViewingImage(null)}>
-              <i className="fa-solid fa-xmark"></i>
+              <span className="material-symbols-outlined filled">close</span>
             </button>
             <img src={viewingImage} className="max-w-[90vw] max-h-[85vh] rounded-lg shadow-2xl" alt="" />
           </div>
@@ -884,7 +884,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
       {editingPost && createPortal(
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999] backdrop-blur-sm" onClick={() => setEditingPost(false)}>
           <div className="bg-surface rounded-2xl p-6 border border-border-dark w-[520px] max-w-[95vw] shadow-2xl animate-[popIn_0.3s_cubic-bezier(0.175,0.885,0.32,1.275)]" onClick={e => e.stopPropagation()}>
-            <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><i className="fa-solid fa-pen text-primary"></i> Edit Post</h3>
+            <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><span className="material-symbols-outlined filled text-primary">edit</span> Edit Post</h3>
             <textarea
               className="w-full bg-white/5 border border-border-dark rounded-xl p-4 text-text-main text-[0.95rem] resize-none outline-none focus:border-primary focus:bg-white/8 transition-all min-h-[120px]"
               value={editPostText}

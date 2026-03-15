@@ -37,7 +37,7 @@ export default function AvatarCropper({ imageSrc, onConfirm, onCancel }) {
 
         {/* Zoom Slider */}
         <div className="flex items-center gap-3 px-1">
-          <i className="fa-solid fa-magnifying-glass-minus text-text-dim text-[0.8rem]"></i>
+          <span className="material-symbols-outlined filled text-text-dim text-[0.8rem]">magnifying-glass-minus</span>
           <input
             type="range"
             min={1}
@@ -47,7 +47,7 @@ export default function AvatarCropper({ imageSrc, onConfirm, onCancel }) {
             onChange={(e) => setZoom(Number(e.target.value))}
             className="flex-1 accent-primary cursor-pointer h-1 bg-white/10 rounded-lg appearance-none"
           />
-          <i className="fa-solid fa-magnifying-glass-plus text-text-dim text-[0.8rem]"></i>
+          <span className="material-symbols-outlined filled text-text-dim text-[0.8rem]">magnifying-glass-plus</span>
         </div>
 
         {/* Buttons */}

@@ -130,11 +130,11 @@ export default function Sidebar() {
   const isActive = (path) => location.pathname === path
 
   const navItems = [
-    { icon: 'fa-solid fa-house', label: 'Home', path: '/feed' },
-    { icon: 'fa-solid fa-magnifying-glass', label: 'Search', path: '/search' },
-    { icon: 'fa-solid fa-bell', label: 'Notifications', path: '/notifications', badge: unreadCount },
-    { icon: 'fa-solid fa-envelope', label: 'Messages', path: '/messages', badge: unreadMsgCount },
-    { icon: 'fa-solid fa-user', label: 'Profile', path: `/profile/${username}` },
+    { icon: 'home', label: 'Home', path: '/feed' },
+    { icon: 'search', label: 'Search', path: '/search' },
+    { icon: 'notifications', label: 'Notifications', path: '/notifications', badge: unreadCount },
+    { icon: 'mail', label: 'Messages', path: '/messages', badge: unreadMsgCount },
+    { icon: 'person', label: 'Profile', path: `/profile/${username}` },
   ]
 
   const toggleTheme = async (e) => {
@@ -203,7 +203,7 @@ export default function Sidebar() {
               }
             }}
           >
-            <i className={`${item.icon} w-5 text-center text-[1.1rem]`}></i>
+            <span className={`material-symbols-outlined w-5 text-center text-[1.25rem] ${isActive(item.path) ? 'filled' : ''}`}>{item.icon}</span>
             <span className="text-base">{item.label}</span>
             {item.badge > 0 && (
               <span className="ml-auto bg-primary text-white rounded-full px-1.5 py-0 min-w-[20px] h-5 flex items-center justify-center text-[0.75rem] font-bold shadow-lg animate-pulse">{item.badge}</span>
@@ -215,7 +215,7 @@ export default function Sidebar() {
           className="mt-2 flex items-center justify-center gap-2 p-3.5 px-6 rounded-full bg-primary text-white border-none font-bold text-[1.05rem] cursor-pointer shadow-[0_4px_14px_rgba(0,191,166,0.35)] hover:scale-105 active:scale-95 transition-all w-full"
           onClick={() => window.dispatchEvent(new CustomEvent('openCompose'))}
         >
-          <i className="fa-solid fa-feather"></i>
+          <span className="material-symbols-outlined">edit</span>
           <span className="hidden xl:inline">Compose</span>
         </button>
       </nav>
@@ -226,7 +226,7 @@ export default function Sidebar() {
           className="flex items-center justify-center w-10 h-10 rounded-full bg-surface border border-border-dark text-text-main hover:bg-white/5 transition-colors shadow-sm cursor-pointer ml-1"
           title="Toggle Light/Dark Mode"
         >
-          {isLightMode ? <i className="fa-solid fa-moon text-indigo-500"></i> : <i className="fa-solid fa-sun text-yellow-500"></i>}
+          {isLightMode ? <span className="material-symbols-outlined text-indigo-500">dark_mode</span> : <span className="material-symbols-outlined text-yellow-500">light_mode</span>}
         </button>
 
         {user && profile && (
@@ -234,17 +234,17 @@ export default function Sidebar() {
             {showMenu && (
               <div className="absolute bottom-[calc(100%+10px)] left-0 right-0 bg-surface border border-border-dark rounded-xl p-1.5 shadow-[0_-8px_24px_rgba(0,0,0,0.4)] z-[999] animate-[popIn_0.2s_cubic-bezier(0.175,0.885,0.32,1.275)] origin-bottom">
                 <button className="flex items-center gap-2.5 w-full p-2.5 px-3 bg-transparent border-none cursor-pointer text-text-main text-[0.9rem] rounded-lg text-left hover:bg-white/5 transition-colors" onClick={() => { navigate(`/profile/${username}`); setShowMenu(false) }}>
-                  <i className="fa-solid fa-user w-4 text-center"></i> View Profile
+                  <span className="material-symbols-outlined w-4 text-center">person</span> View Profile
                 </button>
                 <button className="flex items-center gap-2.5 w-full p-2.5 px-3 bg-transparent border-none cursor-pointer text-text-main text-[0.9rem] rounded-lg text-left hover:bg-white/5 transition-colors" onClick={() => { navigate('/settings'); setShowMenu(false) }}>
-                  <i className="fa-solid fa-gear w-4 text-center"></i> Settings
+                  <span className="material-symbols-outlined w-4 text-center">settings</span> Settings
                 </button>
                 <button className="flex items-center gap-2.5 w-full p-2.5 px-3 bg-transparent border-none cursor-pointer text-text-main text-[0.9rem] rounded-lg text-left hover:bg-white/5 transition-colors" onClick={() => { navigate('/switch-account'); setShowMenu(false) }}>
-                  <i className="fa-solid fa-arrow-right-arrow-left w-4 text-center"></i> Switch Account
+                  <span className="material-symbols-outlined w-4 text-center text-[1.1rem]">swap_horiz</span> Switch Account
                 </button>
                 <div className="h-[1px] bg-border-dark my-1" />
                 <button className="flex items-center gap-2.5 w-full p-2.5 px-3 bg-transparent border-none cursor-pointer text-red-500 text-[0.9rem] rounded-lg text-left hover:bg-red-500/10 transition-colors" onClick={handleLogout}>
-                  <i className="fa-solid fa-right-from-bracket w-4 text-center"></i> Log Out
+                  <span className="material-symbols-outlined w-4 text-center">logout</span> Log Out
                 </button>
               </div>
             )}
@@ -268,7 +268,7 @@ export default function Sidebar() {
                 <span className="text-[0.8rem] text-primary truncate">@{username}</span>
               </div>
               <button className="bg-none border-none cursor-pointer text-text-dim text-base p-1 shrink-0 hover:bg-white/10 rounded-md transition-all" onClick={() => setShowMenu(!showMenu)}>
-                <i className="fa-solid fa-ellipsis"></i>
+                <span className="material-symbols-outlined filled">more_horiz</span>
               </button>
             </div>
           </div>

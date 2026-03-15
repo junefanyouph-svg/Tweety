@@ -345,7 +345,7 @@ export default function ComposeModal({ isOpen, onClose, onSuccess }) {
               window.history.back()
             }}
           >
-            <i className="fa-solid fa-xmark"></i>
+            <span className="material-symbols-outlined filled">close</span>
           </button>
           <button
             className={`py-2 px-6 bg-primary text-white border-none rounded-full text-[0.9rem] font-bold transition-all ${((!content.trim() && !imagePreview && !youtubeData) || uploading) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-primary-hover active:scale-95'}`}
@@ -397,7 +397,7 @@ export default function ComposeModal({ isOpen, onClose, onSuccess }) {
         <div className="relative mt-2.5 inline-block w-full">
           <img src={imagePreview} className="max-w-full max-h-[300px] rounded-xl border border-border-dark block" alt="preview" />
           <button className="absolute top-2 right-2 bg-black/70 border-none rounded-full w-7 h-7 cursor-pointer text-white flex items-center justify-center hover:bg-black transition-colors" onClick={clearImage}>
-            <i className="fa-solid fa-xmark"></i>
+            <span className="material-symbols-outlined filled">close</span>
           </button>
         </div>
       )}
@@ -419,7 +419,7 @@ export default function ComposeModal({ isOpen, onClose, onSuccess }) {
             />
           </div>
           <button className="absolute top-2 right-2 bg-black/70 border-none rounded-full w-7 h-7 cursor-pointer text-white flex items-center justify-center hover:bg-black transition-colors z-[10]" onClick={clearYoutube}>
-            <i className="fa-solid fa-xmark"></i>
+            <span className="material-symbols-outlined filled">close</span>
           </button>
         </div>
       )}
@@ -440,7 +440,7 @@ export default function ComposeModal({ isOpen, onClose, onSuccess }) {
               onClick={() => fileInputRef.current.click()}
               title="Upload image"
             >
-              <i className="fa-solid fa-image"></i>
+              <span className="material-symbols-outlined filled">image</span>
             </button>
             <button
               className="bg-none border-none cursor-pointer text-primary p-2 hover:bg-primary/10 rounded-lg transition-colors flex items-center"
@@ -483,7 +483,7 @@ export default function ComposeModal({ isOpen, onClose, onSuccess }) {
           onClick={() => fileInputRef.current.click()}
           title="Upload image"
         >
-          <i className="fa-solid fa-image"></i>
+          <span className="material-symbols-outlined filled">image</span>
         </button>
         <button
           className="bg-none border-none cursor-pointer text-primary p-2 hover:bg-primary/10 rounded-lg transition-colors flex items-center"
@@ -521,7 +521,7 @@ export default function ComposeModal({ isOpen, onClose, onSuccess }) {
                 className="bg-none border-none cursor-pointer text-text-dim text-xl p-1 hover:text-text-main transition-colors"
                 onClick={closeModal}
               >
-                <i className="fa-solid fa-xmark"></i>
+                <span className="material-symbols-outlined filled">close</span>
               </button>
             </div>
             {composeUI}

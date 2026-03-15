@@ -59,7 +59,7 @@ export default function NewMessageModal({ onClose }) {
                 <header style={styles.header}>
                     <h2 style={styles.title}>New message</h2>
                     <button style={styles.closeBtn} onClick={onClose}>
-                        <i className="fa-solid fa-xmark"></i>
+                        <span className="material-symbols-outlined filled">close</span>
                     </button>
                 </header>
 

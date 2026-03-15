@@ -273,14 +273,14 @@ export default function Profile() {
               {/* Uploading overlay */}
               {avatarUploading && (
                 <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10 transition-opacity">
-                  <i className="fa-solid fa-circle-notch fa-spin text-white text-[1.6rem]"></i>
+                  <span className="material-symbols-outlined filled animate-spin text-white text-[1.6rem]">autorenew</span>
                 </div>
               )}
 
               {/* Hover overlay */}
               {isOwnProfile && !avatarUploading && (
                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                  <i className="fa-solid fa-camera text-white text-[1.3rem]"></i>
+                  <span className="material-symbols-outlined filled text-white text-[1.3rem]">photo_camera</span>
                 </div>
               )}
             </div>
@@ -435,7 +435,7 @@ export default function Profile() {
           >
             <div className="relative" onClick={e => e.stopPropagation()}>
               <button className="absolute -top-10 right-0 text-white cursor-pointer bg-none border-none text-2xl hover:scale-110 transition-transform" onClick={() => setViewingAvatar(false)}>
-                <i className="fa-solid fa-xmark"></i>
+                <span className="material-symbols-outlined filled">close</span>
               </button>
               <img src={profile.avatar_url} className="max-w-[80vw] max-h-[80vh] object-contain rounded-full border-4 border-primary shadow-2xl" alt="avatar" />
             </div>
@@ -450,7 +450,7 @@ export default function Profile() {
         onClick={() => window.dispatchEvent(new CustomEvent('openCompose'))}
         aria-label="Create post"
       >
-        <i className="fa-solid fa-plus"></i>
+        <span className="material-symbols-outlined filled">add</span>
       </button>
     </>
   )

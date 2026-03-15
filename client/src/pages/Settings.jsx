@@ -147,7 +147,7 @@ export default function Settings() {
       {/* Display Name */}
       <div style={styles.section}>
         <h3 style={styles.sectionTitle}>
-          <i className="fa-solid fa-id-card"></i> Display Name
+          <span className="material-symbols-outlined filled">badge</span> Display Name
         </h3>
         <p style={styles.hint}>This is how your name appears on your profile. Can be changed anytime.</p>
         <input
@@ -174,7 +174,7 @@ export default function Settings() {
       {/* Change Username */}
       <div style={styles.section}>
         <h3 style={styles.sectionTitle}>
-          <i className="fa-solid fa-at"></i> Username
+          <span className="material-symbols-outlined filled">alternate_email</span> Username
         </h3>
         <p style={styles.hint}>Your unique username. Must be available and cannot be taken by someone else.</p>
         <input
@@ -193,7 +193,7 @@ export default function Settings() {
       {/* Change Email */}
       <div style={styles.section}>
         <h3 style={styles.sectionTitle}>
-          <i className="fa-solid fa-envelope"></i> Email
+          <span className="material-symbols-outlined filled">mail</span> Email
         </h3>
         <input
           style={styles.input}
@@ -212,7 +212,7 @@ export default function Settings() {
       {/* Change Password */}
       <div style={styles.section}>
         <h3 style={styles.sectionTitle}>
-          <i className="fa-solid fa-lock"></i> Password
+          <span className="material-symbols-outlined filled">lock</span> Password
         </h3>
         <input
           style={styles.input}
@@ -238,12 +238,12 @@ export default function Settings() {
       {/* Delete Account */}
       <div style={{ ...styles.section, borderColor: '#3a1a1a' }}>
         <h3 style={{ ...styles.sectionTitle, color: '#ff4444' }}>
-          <i className="fa-solid fa-triangle-exclamation"></i> Danger Zone
+          <span className="material-symbols-outlined filled">warning</span> Danger Zone
         </h3>
         <p style={styles.dangerText}>Deleting your account is permanent and cannot be undone.</p>
         {errors.delete && <p style={styles.error}>{errors.delete}</p>}
         <button style={styles.deleteBtn} onClick={() => setShowDeleteModal(true)}>
-          <i className="fa-solid fa-trash"></i> Delete Account
+          <span className="material-symbols-outlined filled">delete</span> Delete Account
         </button>
       </div>
 

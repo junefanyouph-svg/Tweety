@@ -45,7 +45,7 @@ export default function PostPage() {
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-[50vh] text-text-dim">
-      <i className="fa-solid fa-circle-notch fa-spin text-2xl mr-3"></i>
+      <span className="material-symbols-outlined filled animate-spin text-2xl mr-3">autorenew</span>
       Loading...
     </div>
   )
@@ -57,11 +57,11 @@ export default function PostPage() {
           className="p-2 hover:bg-white/5 rounded-full text-text-main transition-colors flex items-center gap-2 text-[0.95rem]"
           onClick={() => navigate(from)}
         >
-          <i className="fa-solid fa-arrow-left"></i> Back
+          <span className="material-symbols-outlined filled">arrow_back</span> Back
         </button>
       </div>
       <div className="text-center mt-20 text-text-dim flex flex-col items-center gap-4">
-        <i className="fa-solid fa-ban text-[4rem] opacity-20"></i>
+        <span className="material-symbols-outlined filled text-[4rem] opacity-20">block</span>
         <p className="text-lg">This post doesn't exist or has been deleted.</p>
         <button
           className="mt-4 py-2 px-6 bg-primary text-white font-bold rounded-full hover:opacity-90 transition-opacity"
@@ -80,7 +80,7 @@ export default function PostPage() {
           className="p-2 hover:bg-white/5 rounded-full text-text-main transition-colors flex items-center gap-2 text-[0.95rem] font-bold"
           onClick={() => navigate(from)}
         >
-          <i className="fa-solid fa-arrow-left"></i> {fromLabel}
+          <span className="material-symbols-outlined filled">arrow_back</span> {fromLabel}
         </button>
       </div>
       <div className="mt-5">

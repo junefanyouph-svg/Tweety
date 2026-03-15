@@ -167,10 +167,10 @@ export default function BottomNav() {
   const isActive = (path) => location.pathname === path
 
   const navItems = [
-    { activeIcon: 'fa-solid fa-house', inactiveIcon: 'fa-solid fa-house fa-hollow text-text-dim', path: '/feed' },
-    { activeIcon: 'fa-solid fa-magnifying-glass font-bold shadow-md', inactiveIcon: 'fa-solid fa-magnifying-glass fa-hollow text-text-dim', path: '/search' },
-    { activeIcon: 'fa-solid fa-bell', inactiveIcon: 'fa-regular fa-bell text-text-dim', path: '/notifications', badge: unreadCount },
-    { activeIcon: 'fa-solid fa-envelope', inactiveIcon: 'fa-regular fa-envelope text-text-dim', path: '/messages', badge: unreadMsgCount },
+    { icon: 'home', path: '/feed' },
+    { icon: 'search', extraActive: 'shadow-md', path: '/search' },
+    { icon: 'notifications', path: '/notifications', badge: unreadCount },
+    { icon: 'mail', path: '/messages', badge: unreadMsgCount },
   ]
 
   const toggleTheme = async () => {
@@ -234,27 +234,29 @@ export default function BottomNav() {
                   <span><strong className="text-text-main">{stats.followers}</strong> Followers</span>
                 </div>
               </div>
-              <i className="fa-solid fa-chevron-right text-text-dim/30"></i>
+              <span className="material-symbols-outlined text-text-dim/30">chevron_right</span>
             </div>
 
             <div className={`h-[1px] my-3 ${isLightMode ? 'bg-black/20' : 'bg-border-dark/60'}`} />
 
             <nav className="flex flex-col gap-1">
               <button className="flex items-center gap-4 w-full p-3.5 px-4 bg-transparent border-none cursor-pointer text-text-main text-base rounded-xl text-left hover:bg-white/5 active:bg-white/10 transition-colors" onClick={toggleTheme}>
-                <i className={`w-5 text-center ${isLightMode ? 'fa-solid fa-moon text-indigo-500' : 'fa-solid fa-sun text-yellow-500'}`}></i>
+                <span className={`material-symbols-outlined w-5 text-center ${isLightMode ? 'text-indigo-500' : 'text-yellow-500'}`}>
+                  {isLightMode ? 'dark_mode' : 'light_mode'}
+                </span>
                 {isLightMode ? 'Dark Mode' : 'Light Mode'}
               </button>
               <button className="flex items-center gap-4 w-full p-3.5 px-4 bg-transparent border-none cursor-pointer text-text-main text-base rounded-xl text-left hover:bg-white/5 active:bg-white/10 transition-colors" onClick={() => { navigate('/settings'); closeMenu() }}>
-                <i className="fa-solid fa-gear w-5 text-center text-primary"></i> Settings
+                <span className="material-symbols-outlined w-5 text-center text-primary">settings</span> Settings
               </button>
               <button className="flex items-center gap-4 w-full p-3.5 px-4 bg-transparent border-none cursor-pointer text-text-main text-base rounded-xl text-left hover:bg-white/5 active:bg-white/10 transition-colors" onClick={() => { navigate('/switch-account'); closeMenu() }}>
-                <i className="fa-solid fa-arrow-right-arrow-left w-5 text-center text-primary"></i> Switch Account
+                <span className="material-symbols-outlined w-5 text-center text-primary">swap_horiz</span> Switch Account
               </button>
 
               <div className={`h-[1px] my-3 ${isLightMode ? 'bg-black/20' : 'bg-border-dark/60'}`} />
 
               <button className="flex items-center gap-4 w-full p-3.5 px-4 bg-transparent border-none cursor-pointer text-red-500 text-base rounded-xl text-left hover:bg-red-500/10 active:bg-red-500/20 transition-colors" onClick={handleLogout}>
-                <i className="fa-solid fa-right-from-bracket w-5 text-center"></i> Log Out
+                <span className="material-symbols-outlined w-5 text-center">logout</span> Log Out
               </button>
             </nav>
           </div>
@@ -275,7 +277,7 @@ export default function BottomNav() {
             }}
           >
             <div className="relative inline-block">
-              <i className={`${isActive(item.path) ? item.activeIcon : item.inactiveIcon} text-[1.4rem] transition-all`}></i>
+              <span className={`material-symbols-outlined text-[1.6rem] transition-all ${isActive(item.path) ? 'filled ' + (item.extraActive || '') : 'text-text-dim'}`}>{item.icon}</span>
               {item.badge > 0 && (
                 <span className="absolute -top-1.5 -right-2 bg-primary text-white rounded-full w-4 h-4 flex items-center justify-center text-[0.65rem] font-bold ring-2 ring-bg-dark">{item.badge}</span>
               )}

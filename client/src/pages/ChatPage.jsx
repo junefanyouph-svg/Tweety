@@ -401,7 +401,7 @@ export default function ChatPage() {
             `}</style>
             <header style={styles.header}>
                 <button style={styles.backBtn} onClick={() => navigate('/messages')}>
-                    <i className="fa-solid fa-arrow-left"></i>
+                    <span className="material-symbols-outlined filled">arrow_back</span>
                 </button>
                 <div style={styles.headerInfo} onClick={() => { setShowMediaInModal(false); setIsClosingSettings(false); setShowSettings(true); }}>
                     <div style={styles.headerAvatar}>
@@ -417,7 +417,7 @@ export default function ChatPage() {
                     </div>
                 </div>
                 <button style={styles.dotsBtn} onClick={() => { setShowMediaInModal(false); setIsClosingSettings(false); setShowSettings(true); }}>
-                    <i className="fa-solid fa-ellipsis"></i>
+                    <span className="material-symbols-outlined filled">more_horiz</span>
                 </button>
             </header>
 
@@ -470,11 +470,11 @@ export default function ChatPage() {
                                 {msg.sender_id === currentUser?.id && (
                                     <div style={styles.messageStatus}>
                                         {msg.status === 'sending' ? (
-                                            <i className="fa-solid fa-spinner" style={{ ...styles.loadingIcon, animation: 'sending-spin 1s linear infinite' }}></i>
+                                            <span className="material-symbols-outlined filled" style={{ ...styles.loadingIcon, animation: 'sending-spin 1s linear infinite' }}>autorenew</span>
                                         ) : msg.status === 'error' ? (
-                                            <i className="fa-solid fa-circle-exclamation" style={{ color: '#ff4444' }}></i>
+                                            <span className="material-symbols-outlined filled" style={{ color: '#ff4444' }}>error</span>
                                         ) : (
-                                            <i className="fa-solid fa-check" style={styles.checkIcon}></i>
+                                            <span className="material-symbols-outlined filled" style={styles.checkIcon}>check</span>
                                         )}
                                     </div>
                                 )}
@@ -492,14 +492,13 @@ export default function ChatPage() {
                         style={styles.plusBtn}
                         onClick={() => setShowPlusMenu(!showPlusMenu)}
                     >
-                        <i
-                            className="fa-solid fa-plus"
+                        <span className="material-symbols-outlined filled"
                             style={{
                                 display: 'inline-block',
                                 transition: 'transform 0.2s ease-out',
                                 transform: showPlusMenu ? 'rotate(45deg)' : 'rotate(0deg)'
                             }}
-                        ></i>
+                        >add</span>
                     </button>
 
                     {showPlusMenu && (
@@ -513,7 +512,7 @@ export default function ChatPage() {
                                 onMouseLeave={() => setHoveredPlusItem(null)}
                                 onClick={() => { alert('Emoji clicked'); setShowPlusMenu(false); }}
                             >
-                                <i className="fa-regular fa-face-smile" style={styles.plusMenuItemIcon}></i>
+                                <span className="material-symbols-outlined" style={styles.plusMenuItemIcon}>sentiment_satisfied</span>
                                 Emoji
                             </div>
                             <div
@@ -525,7 +524,7 @@ export default function ChatPage() {
                                 onMouseLeave={() => setHoveredPlusItem(null)}
                                 onClick={() => { setShowGifPicker(true); setShowPlusMenu(false); }}
                             >
-                                <i className="fa-solid fa-film" style={styles.plusMenuItemIcon}></i>
+                                <span className="material-symbols-outlined filled" style={styles.plusMenuItemIcon}>movie</span>
                                 GIF
                             </div>
                             <div
@@ -537,7 +536,7 @@ export default function ChatPage() {
                                 onMouseLeave={() => setHoveredPlusItem(null)}
                                 onClick={() => { fileInputRef.current?.click(); setShowPlusMenu(false); }}
                             >
-                                <i className="fa-solid fa-arrow-up-from-bracket" style={styles.plusMenuItemIcon}></i>
+                                <span className="material-symbols-outlined filled" style={styles.plusMenuItemIcon}>upload</span>
                                 Upload
                             </div>
                         </div>
@@ -560,7 +559,7 @@ export default function ChatPage() {
                                 <img src={mediaPreview} style={styles.mediaPreview} alt="preview" />
                             )}
                             <button style={styles.removeMediaBtn} onClick={clearMedia}>
-                                <i className="fa-solid fa-xmark"></i>
+                                <span className="material-symbols-outlined filled">close</span>
                             </button>
                         </div>
                     )}
@@ -586,7 +585,7 @@ export default function ChatPage() {
                                 type="submit"
                                 disabled={sending}
                             >
-                                <i className="fa-solid fa-arrow-up"></i>
+                                <span className="material-symbols-outlined filled">arrow_upward</span>
                             </button>
                         )}
                     </div>
@@ -624,7 +623,7 @@ export default function ChatPage() {
                                 <div style={styles.mediaModalHeader}>
                                     <h3 style={styles.modalTitle}>Media</h3>
                                     <button style={styles.mediaModalBackBtn} onClick={() => { setShowMediaInModal(false); setMediaTab('photos'); }}>
-                                        <i className="fa-solid fa-arrow-left"></i> Back
+                                        <span className="material-symbols-outlined filled">arrow_back</span> Back
                                     </button>
                                 </div>
                                 <div style={styles.mediaTabs}>
@@ -685,7 +684,7 @@ export default function ChatPage() {
                                             setIsClosingSettings(false);
                                         }, 300);
                                     }}>
-                                        <i className="fa-solid fa-xmark"></i>
+                                        <span className="material-symbols-outlined filled">close</span>
                                     </button>
                                 </div>
 
@@ -714,7 +713,7 @@ export default function ChatPage() {
                                                 onMouseLeave={() => setIsHoveringProfile(false)}
                                                 onClick={() => navigate(`/profile/${recipient?.username}`)}
                                             >
-                                                <i className="fa-solid fa-user"></i>
+                                                <span className="material-symbols-outlined filled">person</span>
                                             </div>
                                             <span style={styles.iconButtonLabel}>Profile</span>
                                         </div>
@@ -729,7 +728,7 @@ export default function ChatPage() {
                                                 onMouseLeave={() => setIsHoveringMedia(false)}
                                                 onClick={() => setShowMediaInModal(true)}
                                             >
-                                                <i className="fa-solid fa-photo-film" style={styles.mediaRowIcon}></i>
+                                                <span className="material-symbols-outlined filled" style={styles.mediaRowIcon}>photo_library</span>
                                             </div>
                                             <span style={styles.iconButtonLabel}>Media</span>
                                         </div>
@@ -738,7 +737,7 @@ export default function ChatPage() {
 
                                 <div style={styles.modalActions}>
                                     <div style={styles.deleteBox} onClick={() => setShowDeleteConfirm(true)}>
-                                        <i className="fa-solid fa-trash-can"></i> Delete conversation
+                                        <span className="material-symbols-outlined filled">delete</span> Delete conversation
                                     </div>
                                 </div>
                             </>

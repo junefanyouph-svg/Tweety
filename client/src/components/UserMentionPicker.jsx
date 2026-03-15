@@ -165,7 +165,7 @@ export default function UserMentionPicker({ onSelect, onClose, searchQuery, posi
       <div className="flex justify-between items-center gap-2 p-2.5 px-3 border-b border-border-dark">
         <div className="text-text-dim text-[0.85rem] font-bold uppercase tracking-[0.5px]">Mention users</div>
         <button className="bg-none border-none cursor-pointer text-text-dim text-base p-1.5 rounded-md hover:bg-white/10 transition-all" onClick={onClose}>
-          <i className="fa-solid fa-xmark"></i>
+          <span className="material-symbols-outlined filled">close</span>
         </button>
       </div>
 

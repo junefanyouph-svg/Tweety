@@ -56,12 +56,12 @@ export default function NotificationToast() {
 
   const getIcon = (type) => {
     switch (type) {
-      case 'like': return <i className="fa-solid fa-heart" style={{ color: '#e0245e' }}></i>
-      case 'comment': return <i className="fa-solid fa-comment" style={{ color: '#00BFA6' }}></i>
-      case 'follow': return <i className="fa-solid fa-user-plus" style={{ color: '#8B5CF6' }}></i>
-      case 'mention': return <i className="fa-solid fa-at" style={{ color: '#1d9bf0' }}></i>
-      case 'comment_mention': return <i className="fa-solid fa-at" style={{ color: '#1d9bf0' }}></i>
-      default: return <i className="fa-solid fa-bell" style={{ color: '#00BFA6' }}></i>
+      case 'like': return <span className="material-symbols-outlined filled" style={{ color: '#e0245e' }}>favorite</span>
+      case 'comment': return <span className="material-symbols-outlined filled" style={{ color: '#00BFA6' }}>chat_bubble</span>
+      case 'follow': return <span className="material-symbols-outlined filled" style={{ color: '#8B5CF6' }}>person_add</span>
+      case 'mention': return <span className="material-symbols-outlined filled" style={{ color: '#1d9bf0' }}>alternate_email</span>
+      case 'comment_mention': return <span className="material-symbols-outlined filled" style={{ color: '#1d9bf0' }}>alternate_email</span>
+      default: return <span className="material-symbols-outlined filled" style={{ color: '#00BFA6' }}>notifications</span>
     }
   }
 
@@ -108,7 +108,7 @@ export default function NotificationToast() {
             style={toastStyles.closeBtn}
             onClick={(e) => { e.stopPropagation(); removeToast(toast.toastId) }}
           >
-            <i className="fa-solid fa-xmark"></i>
+            <span className="material-symbols-outlined filled">close</span>
           </button>
 
           {/* Progress bar */}

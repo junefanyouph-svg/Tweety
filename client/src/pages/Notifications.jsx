@@ -91,12 +91,12 @@ export default function Notifications() {
 
   const getNotificationIcon = (type) => {
     switch (type) {
-      case 'like': return <i className="fa-solid fa-heart"></i>
-      case 'comment': return <i className="fa-solid fa-comment"></i>
-      case 'follow': return <i className="fa-solid fa-user-plus"></i>
-      case 'mention': return <i className="fa-solid fa-at"></i>
-      case 'comment_mention': return <i className="fa-solid fa-at"></i>
-      default: return <i className="fa-solid fa-bell"></i>
+      case 'like': return <span className="material-symbols-outlined filled">favorite</span>
+      case 'comment': return <span className="material-symbols-outlined filled">chat_bubble</span>
+      case 'follow': return <span className="material-symbols-outlined filled">person_add</span>
+      case 'mention': return <span className="material-symbols-outlined filled">alternate_email</span>
+      case 'comment_mention': return <span className="material-symbols-outlined filled">alternate_email</span>
+      default: return <span className="material-symbols-outlined filled">notifications</span>
     }
   }
 
@@ -151,7 +151,7 @@ export default function Notifications() {
         <div style={styles.list}>
           {notifications.length === 0 && (
             <div style={styles.emptyState}>
-              <i className="fa-solid fa-bell" style={styles.emptyIcon}></i>
+              <span className="material-symbols-outlined" style={styles.emptyIcon}>notifications</span>
               <p style={styles.emptyText}>No notifications yet</p>
             </div>
           )}
@@ -194,7 +194,7 @@ export default function Notifications() {
                 </span>
               </div>
               <button style={styles.deleteBtn} onClick={() => handleDelete(n.id)}>
-                <i className="fa-solid fa-xmark"></i>
+                <span className="material-symbols-outlined">close</span>
               </button>
             </div>
           ))}

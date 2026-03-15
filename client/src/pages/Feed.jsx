@@ -103,7 +103,7 @@ export default function Feed() {
         onClick={() => window.dispatchEvent(new CustomEvent('openCompose'))}
         aria-label="Create post"
       >
-        <i className="fa-solid fa-plus"></i>
+        <span className="material-symbols-outlined filled">add</span>
       </button>
     </>
   )
