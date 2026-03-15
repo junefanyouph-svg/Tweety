@@ -176,7 +176,17 @@ export default function Sidebar() {
   return (
     <div className="w-[260px] h-screen bg-bg-dark border-r border-border-dark flex flex-col p-6 px-4 fixed left-0 top-0 z-[100] max-md:hidden">
       <div className="flex items-center gap-3 mb-8 px-3 cursor-pointer" onClick={() => navigate('/feed')}>
-        <img src="/Jargon_icon.svg" alt="Jargon Logo" className="w-8 h-8 object-contain" />
+        <div 
+          className="w-8 h-8 bg-primary" 
+          style={{ 
+            maskImage: "url('/Jargon_icon.svg')", 
+            WebkitMaskImage: "url('/Jargon_icon.svg')",
+            maskSize: 'contain',
+            WebkitMaskSize: 'contain',
+            maskRepeat: 'no-repeat',
+            WebkitMaskRepeat: 'no-repeat'
+          }} 
+        />
         <span className="text-[1.5rem] font-bold text-primary">Jargon</span>
       </div>
 
