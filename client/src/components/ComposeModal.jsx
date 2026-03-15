@@ -533,7 +533,7 @@ export default function ComposeModal({ isOpen, onClose, onSuccess }) {
       {/* Mobile: full-screen slide-up sheet */}
       {isMobile && (
         <div 
-          className={`fixed top-0 left-0 right-0 z-[9999] bg-surface flex flex-col ${isComposeClosing ? 'animate-[composeSheetOut_0.26s_cubic-bezier(0.4,0,1,1)_forwards]' : 'animate-[composeSheetIn_0.34s_cubic-bezier(0.22,1,0.36,1)_forwards]'}`}
+          className={`fixed top-0 left-0 right-0 z-[9999] bg-surface flex flex-col ${isComposeClosing ? 'animate-[composeSheetOut_0.26s_cubic-bezier(0.4,0,1,1)_forwards]' : 'animate-[composeSheetIn_0.5s_cubic-bezier(0.22,1,0.36,1)_forwards]'}`}
           style={{ height: viewportHeight, touchAction: 'none' }}
         >
           <div className="flex flex-col w-full h-full">
