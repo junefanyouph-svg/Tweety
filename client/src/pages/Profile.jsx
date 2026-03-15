@@ -307,7 +307,7 @@ export default function Profile() {
                   className="py-1.5 px-3 bg-white/5 text-text-main border border-border-dark rounded-lg text-[0.85rem] font-bold hover:bg-white/10 transition-colors shrink-0"
                   onClick={() => setIsEditing(true)}
                 >
-                  <i className="fa-solid fa-pen mr-1.5 opacity-60"></i> Edit Profile
+                  Edit Profile
                 </button>
               ) : (
                 <div className="flex gap-2">
@@ -337,8 +337,27 @@ export default function Profile() {
                   rows={3}
                 />
                 <div className="flex gap-2 justify-end">
-                  <button className="py-1.5 px-4 bg-primary text-white text-[0.85rem] font-bold rounded-lg hover:opacity-90 transition-opacity" onClick={handleSaveBio}>Save</button>
-                  <button className="py-1.5 px-4 bg-white/5 text-text-dim text-[0.85rem] border border-border-dark rounded-lg hover:bg-white/10 transition-colors" onClick={() => setIsEditing(false)}>Cancel</button>
+                  {(() => {
+                    const isBioChanged = bio !== (profile?.bio || '')
+                    return (
+                      <button
+                        disabled={!isBioChanged}
+                        className={`py-1.5 px-4 text-[0.85rem] font-bold rounded-lg transition-all ${isBioChanged ? 'bg-primary text-white hover:opacity-90' : 'bg-white/5 text-text-dim cursor-not-allowed opacity-50'}`}
+                        onClick={handleSaveBio}
+                      >
+                        Save
+                      </button>
+                    )
+                  })()}
+                  <button
+                    className="py-1.5 px-4 bg-red-500/10 text-red-500 text-[0.85rem] font-bold border border-red-500/20 rounded-lg hover:bg-red-500/20 transition-colors"
+                    onClick={() => {
+                      setIsEditing(false)
+                      setBio(profile?.bio || '')
+                    }}
+                  >
+                    Cancel
+                  </button>
                 </div>
               </div>
             ) : (
