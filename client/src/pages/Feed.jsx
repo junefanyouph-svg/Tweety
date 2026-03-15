@@ -340,37 +340,49 @@ export default function Feed() {
     }, 260)
   }
 
-  // Handle hardware back button / popstate to close compose
+  // Handle compose sheet open/close lifecycle and back button
   useEffect(() => {
     if (!showCompose) return
 
-    // Lock body scroll tightly for mobile
-    const scrollY = window.scrollY
-    const originalStyle = window.getComputedStyle(document.body)
-    const prevPosition = originalStyle.position
-    const prevTop = originalStyle.top
-    const prevWidth = originalStyle.width
-    const prevOverflow = originalStyle.overflow
-
-    document.body.style.position = 'fixed'
-    document.body.style.top = `-${scrollY}px`
-    document.body.style.width = '100%'
+    // Simple scroll lock using body and HTML overflow
+    const prevBodyOverflow = document.body.style.overflow
+    const prevHtmlOverflow = document.documentElement.style.overflow
     document.body.style.overflow = 'hidden'
+    document.documentElement.style.overflow = 'hidden'
 
     // Push a fake history entry so hardware "back" closes compose
     window.history.pushState({ compose: true }, '')
+    
+    // Auto-detect Android back button dismissing keyboard (viewport height increases significantly)
+    let initialVpHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight
+    const handleVpResize = () => {
+      if (!window.visualViewport) return
+      const currentHeight = window.visualViewport.height
+      // If height increased by > 100px (keyboard closed by system back button)
+      if (currentHeight - initialVpHeight > 100) {
+        closeCompose()
+        // Safely pop state if it hasn't been popped
+        if (window.history.state?.compose) window.history.back()
+      }
+      initialVpHeight = currentHeight
+    }
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleVpResize)
+    }
+
     const handlePopState = () => {
       closeCompose()
     }
     window.addEventListener('popstate', handlePopState)
 
     return () => {
-      document.body.style.position = prevPosition
-      document.body.style.top = prevTop
-      document.body.style.width = prevWidth
-      document.body.style.overflow = prevOverflow
-      window.scrollTo(0, scrollY)
+      document.body.style.overflow = prevBodyOverflow
+      document.documentElement.style.overflow = prevHtmlOverflow
       window.removeEventListener('popstate', handlePopState)
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', handleVpResize)
+      }
     }
   }, [showCompose])
 
@@ -566,14 +578,13 @@ export default function Feed() {
       {/* Mobile: full-screen slide-up sheet */}
       {isMobile && (
         <div 
-          className={`fixed inset-0 z-[9999] bg-surface ${isComposeClosing ? 'animate-[composeSheetOut_0.26s_cubic-bezier(0.4,0,1,1)_forwards]' : 'animate-[composeSheetIn_0.34s_cubic-bezier(0.22,1,0.36,1)_forwards]'}`}
+          className={`fixed top-0 left-0 right-0 z-[9999] bg-surface flex flex-col ${isComposeClosing ? 'animate-[composeSheetOut_0.26s_cubic-bezier(0.4,0,1,1)_forwards]' : 'animate-[composeSheetIn_0.34s_cubic-bezier(0.22,1,0.36,1)_forwards]'}`}
+          style={{ height: viewportHeight, touchAction: 'none' }}
         >
-          <div className="flex flex-col w-full h-full" style={{ height: viewportHeight }}>
-            <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 pb-0">
-              {composeUI}
-            </div>
-            {mobileToolbar}
+          <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 pb-0 overscroll-none" style={{ touchAction: 'auto' }}>
+            {composeUI}
           </div>
+          {mobileToolbar}
         </div>
       )}
     </>,
