@@ -261,7 +261,7 @@ export default function BottomNav() {
         </>
       )}
 
-      <div className="fixed bottom-0 left-0 right-0 h-[60px] bg-bg-dark border-t border-border-dark flex items-center justify-around z-[100] px-4 md:hidden">
+      <div className="fixed bottom-0 left-0 right-0 h-[calc(64px+env(safe-area-inset-bottom))] bg-bg-dark border-t border-border-dark flex items-start justify-around z-[100] px-4 md:hidden pb-[env(safe-area-inset-bottom)] pt-2">
         {navItems.map(item => (
           <button
             key={item.path}

@@ -11,7 +11,7 @@ export default function Layout({ children }) {
   return (
     <div className="flex">
       <Sidebar />
-      <div className={`main-content flex-1 min-h-screen ml-[260px] max-md:ml-0 max-md:pt-0 max-md:w-full ${isChatPage ? 'max-md:pb-0' : 'max-md:pb-[70px]'}`}>
+      <div className={`main-content flex-1 min-h-dvh ml-[260px] max-md:ml-0 max-md:pt-0 max-md:w-full ${isChatPage ? 'max-md:pb-0' : 'max-md:pb-[calc(70px+env(safe-area-inset-bottom))]'}`}>
         {children}
       </div>
       {!isChatPage && <BottomNav />}

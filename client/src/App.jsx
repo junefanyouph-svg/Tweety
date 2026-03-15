@@ -82,7 +82,7 @@ function App() {
   }, [session?.user?.id])
 
   if (loading) return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', backgroundColor: '#0f1117', color: '#00BFA6', fontSize: '1.2rem' }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100dvh', backgroundColor: '#0f1117', color: '#00BFA6', fontSize: '1.2rem' }}>
       Loading...
     </div>
   )
