@@ -104,8 +104,8 @@ export const styles = {
     bubbleMedia: { width: '100%', maxWidth: '300px', borderRadius: '12px', marginTop: '8px', cursor: 'pointer', border: '1px solid var(--color-border-dark)' },
     messageStatus: {
         position: 'absolute',
-        right: '8px',
-        bottom: '8px',
+        right: '10px',
+        bottom: '6px',
         fontSize: '0.7rem',
         display: 'flex',
         alignItems: 'center',

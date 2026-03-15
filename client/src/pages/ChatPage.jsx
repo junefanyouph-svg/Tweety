@@ -129,6 +129,13 @@ export default function ChatPage() {
                         });
                     }
                 })
+                .on('postgres_changes', {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'messages',
+                }, (payload) => {
+                    setMessages(prev => prev.map(m => m.id === payload.new.id ? { ...m, ...payload.new } : m));
+                })
                 .subscribe((status) => {
                     console.log(`Real-time subscription status for chat: ${status}`);
                 })
@@ -482,7 +489,9 @@ export default function ChatPage() {
                                         ) : msg.status === 'error' ? (
                                             <span className="material-symbols-outlined filled" style={{ color: '#ff4444' }}>error</span>
                                         ) : (
-                                            <span className="material-symbols-outlined filled" style={styles.checkIcon}>check</span>
+                                            <span className="material-symbols-outlined filled" style={styles.checkIcon}>
+                                                {msg.read ? 'done_all' : 'check'}
+                                            </span>
                                         )}
                                     </div>
                                 )}
