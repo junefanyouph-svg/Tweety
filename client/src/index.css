@@ -18,6 +18,16 @@ body {
   @apply bg-bg-dark text-text-main antialiased m-0 p-0 selection:bg-primary/30 selection:text-white;
 }
 
+/* PWA standalone safe-area padding for notched iOS devices */
+@supports (padding-top: env(safe-area-inset-top)) {
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
 #root {
   @apply min-h-screen flex flex-col;
 }
