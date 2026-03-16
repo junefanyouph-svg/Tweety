@@ -10,6 +10,7 @@ export default function ResetPassword() {
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [ready, setReady] = useState(false)
+  const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -53,14 +54,17 @@ export default function ResetPassword() {
       return
     }
 
+    setLoading(true)
     const { error } = await supabase.auth.updateUser({ password })
     if (error) {
       setError(error.message)
+      setLoading(false)
       return
     }
 
     setMessage('Password updated. Please log in again.')
     await supabase.auth.signOut()
+    setLoading(false)
     setTimeout(() => navigate('/'), 800)
   }
 
@@ -103,8 +107,12 @@ export default function ResetPassword() {
             {message && (
               <p style={{ ...loginStyles.error, color: '#00BFA6' }}>{message}</p>
             )}
-            <button style={loginStyles.button} type="submit" disabled={!ready}>
-              Update password
+            <button 
+              style={{...loginStyles.button, opacity: (loading || !ready) ? 0.7 : 1, cursor: (loading || !ready) ? 'not-allowed' : 'pointer'}} 
+              type="submit" 
+              disabled={loading || !ready}
+            >
+              {loading ? 'Updating...' : 'Update password'}
             </button>
             <p style={loginStyles.link}>
               <Link to="/">Back to login</Link>

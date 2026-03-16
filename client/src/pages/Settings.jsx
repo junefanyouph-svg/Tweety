@@ -229,7 +229,15 @@ export default function Settings() {
         />
         {errors.password && <p style={styles.error}>{errors.password}</p>}
         {success.password && <p style={styles.successMsg}>✅ Password updated!</p>}
-        <button style={styles.saveBtn} onClick={handleUpdatePassword} disabled={loading.password}>
+        <button 
+          style={{
+            ...styles.saveBtn,
+            opacity: (loading.password || !password.trim()) ? 0.5 : 1,
+            cursor: (loading.password || !password.trim()) ? 'not-allowed' : 'pointer'
+          }} 
+          onClick={handleUpdatePassword} 
+          disabled={loading.password || !password.trim()}
+        >
           {loading.password ? 'Saving...' : 'Save Password'}
         </button>
       </div>

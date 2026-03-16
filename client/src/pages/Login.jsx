@@ -9,6 +9,7 @@ export default function Login() {
   const [identifier, setIdentifier] = useState('') // email or username
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const isAddMode = searchParams.get('add') === '1'
@@ -50,10 +51,12 @@ export default function Login() {
       }
     }
 
+    setLoading(true)
     const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password })
 
     if (error) {
       setError(error.message)
+      setLoading(false)
     } else {
       // Save account session to local store for multi-account switching
       const { data: { session } } = await supabase.auth.getSession()
@@ -63,6 +66,7 @@ export default function Login() {
         const profile = await profileRes.json()
         saveAccount(session, profile)
       }
+      setLoading(false)
       navigate(isAddMode ? '/switch-account' : '/feed')
     }
   }
@@ -100,7 +104,13 @@ export default function Login() {
           onChange={(e) => setPassword(e.target.value)}
         />
         {error && <p style={styles.error}>{error}</p>}
-        <button style={styles.button} type="submit">Log In</button>
+        <button 
+          style={{...styles.button, opacity: loading ? 0.7 : 1, cursor: loading ? 'not-allowed' : 'pointer'}} 
+          type="submit" 
+          disabled={loading}
+        >
+          {loading ? 'Logging In...' : 'Log In'}
+        </button>
         <p style={styles.link}>
           <Link to="/forgot-password">Forgot password?</Link>
         </p>

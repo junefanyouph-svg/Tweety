@@ -10,6 +10,7 @@ export default function SignUp() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
 
   const handleSignUp = async (e) => {
@@ -41,6 +42,7 @@ export default function SignUp() {
       return
     }
 
+    setLoading(true)
     const { data, error } = await supabase.auth.signUp({
       email: trimmedEmail,
       password,
@@ -49,6 +51,7 @@ export default function SignUp() {
 
     if (error) {
       setError(error.message)
+      setLoading(false)
     } else {
       // Auto create profile
       await fetch(`${API_URL}/profiles`, {
@@ -65,6 +68,7 @@ export default function SignUp() {
       if (session) {
         saveAccount(session, { username: trimmedUsername, display_name: '', avatar_url: null })
       }
+      setLoading(false)
       navigate('/feed')
     }
   }
@@ -109,7 +113,13 @@ export default function SignUp() {
           onChange={(e) => setPassword(e.target.value)}
         />
         {error && <p style={styles.error}>{error}</p>}
-        <button style={styles.button} type="submit">Sign Up</button>
+        <button 
+          style={{...styles.button, opacity: loading ? 0.7 : 1, cursor: loading ? 'not-allowed' : 'pointer'}} 
+          type="submit" 
+          disabled={loading}
+        >
+          {loading ? 'Signing Up...' : 'Sign Up'}
+        </button>
         <p style={styles.link}>Already have an account? <Link to="/">Log In</Link></p>
       </form>
     </div>
