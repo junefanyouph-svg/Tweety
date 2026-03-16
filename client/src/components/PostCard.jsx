@@ -620,7 +620,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
                   ? <img src={comment.profiles.avatar_url} className={`${depth > 0 ? 'w-8 h-8' : 'w-7 h-7'} rounded-full object-cover block`} alt="" />
                   : <div className={`${depth > 0 ? 'w-8 h-8 flex items-center justify-center text-[0.8rem]' : 'w-7 h-7 flex items-center justify-center text-[0.75rem]'} rounded-full bg-primary text-white`}>{commentUsername?.charAt(0)}</div>}
               </div>
-              <div className={depth > 0 ? "flex flex-col" : ""}><span className="font-bold text-[0.85rem] text-text-main">{comment.profiles?.display_name || commentUsername}<span className="text-text-dim font-normal text-[0.72rem] ml-1.5">· {formatDate(comment.created_at)}</span></span><span className={`text-[0.75rem] text-text-dim ${depth === 0 ? 'ml-1' : ''}`}>@{commentUsername}</span></div>
+              <div className="flex flex-col"><span className="font-bold text-[0.85rem] text-text-main">{comment.profiles?.display_name || commentUsername}<span className="text-text-dim font-normal text-[0.72rem] ml-1.5">· {formatDate(comment.created_at)}</span></span><span className="text-[0.75rem] text-text-dim">@{commentUsername}</span></div>
             </div>
           </div>
           <div className={depth > 0 ? "ml-10" : "ml-12"}>
