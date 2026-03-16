@@ -25,7 +25,6 @@ export default function Profile() {
   const [postsLoading, setPostsLoading] = useState(true)
   const [avatarUploading, setAvatarUploading] = useState(false)
   const avatarInputRef = useRef(null)
-  const [avatarHovered, setAvatarHovered] = useState(false)
   const [viewingAvatar, setViewingAvatar] = useState(false)
   const navigate = useNavigate()
   const [cropImageSrc, setCropImageSrc] = useState(null)
@@ -135,12 +134,13 @@ export default function Profile() {
       return
     }
     const reader = new FileReader()
-    reader.onload = (e) => setCropImageSrc(e.target.result)
+    reader.onload = (ev) => setCropImageSrc(ev.target.result)
     reader.readAsDataURL(file)
   }
 
   const handleCropConfirm = async (croppedBlob) => {
     setCropImageSrc(null)
+    if (avatarInputRef.current) avatarInputRef.current.value = ''
     setAvatarUploading(true)
 
     const fileName = `${profile.user_id}-${Date.now()}.jpg`
@@ -151,22 +151,18 @@ export default function Profile() {
       const avatar_url = `${data.publicUrl}?t=${Date.now()}`
       await supabase.from('profiles').update({ avatar_url }).eq('user_id', profile.user_id)
 
-      // Invalidate ALL caches for this user
       invalidateProfile(username)
       invalidateCache(`profile-${username}`)
 
-      // Set profile locally
       const updatedProfile = { ...profile, avatar_url }
       setProfile(updatedProfile)
 
-      // Update local posts to show new avatar instantly
       setPosts(prev => prev.map(p => ({
         ...p,
         profiles: { ...p.profiles, avatar_url }
       })))
 
-      // Notify other components (Sidebar, BottomNav, etc.)
-      window.dispatchEvent(new CustomEvent('tweety_profile_updated', { detail: { user_id: profile.user_id, avatar_url } }));
+      window.dispatchEvent(new CustomEvent('tweety_profile_updated', { detail: { user_id: profile.user_id, avatar_url } }))
     }
 
     setAvatarUploading(false)
@@ -251,36 +247,34 @@ export default function Profile() {
         <div className="max-w-[620px] mx-auto px-3 w-full box-border pb-8">
         {/* Profile Card */}
         <div className="bg-surface rounded-2xl p-6 my-5 border border-border-dark flex gap-5 items-start max-sm:flex-col">
-          <div
-            className={`relative inline-block ${isOwnProfile ? 'cursor-pointer group' : profile?.avatar_url ? 'cursor-pointer group' : 'cursor-default'}`}
-            onMouseEnter={() => setAvatarHovered(true)}
-            onMouseLeave={() => setAvatarHovered(false)}
-            onClick={() => {
-              if (isOwnProfile) {
-                // Owner: clicking uploads a new avatar
-                if (!avatarUploading) avatarInputRef.current.click()
-              } else if (profile?.avatar_url) {
-                // Visitor: clicking views the avatar
-                setViewingAvatar(true)
-              }
-            }}
-          >
-            <div className="relative overflow-hidden rounded-full border-[3px] border-primary shadow-xl">
+          {/* Avatar Container — fixed size prevents layout shift */}
+          <div className="relative w-[86px] h-[86px] shrink-0">
+            {/* Clickable avatar area */}
+            <div
+              className={`relative w-[86px] h-[86px] rounded-full overflow-hidden border-[3px] border-primary shadow-xl ${isOwnProfile ? 'cursor-pointer group' : profile?.avatar_url ? 'cursor-pointer group' : 'cursor-default'}`}
+              onClick={() => {
+                if (isOwnProfile) {
+                  if (!avatarUploading) avatarInputRef.current.click()
+                } else if (profile?.avatar_url) {
+                  setViewingAvatar(true)
+                }
+              }}
+            >
               {profile?.avatar_url ? (
                 <img
                   src={profile.avatar_url}
-                  className="w-20 h-20 object-cover"
+                  className="w-full h-full object-cover block"
                   alt="avatar"
                 />
               ) : (
-                <div className="w-20 h-20 bg-primary flex items-center justify-center text-[2rem] font-bold text-white">
+                <div className="w-full h-full bg-primary flex items-center justify-center text-[2rem] font-bold text-white">
                   {(profile?.display_name || username)?.charAt(0).toUpperCase()}
                 </div>
               )}
 
               {/* Uploading overlay */}
               {avatarUploading && (
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10 transition-opacity">
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
                   <span className="material-symbols-outlined filled animate-spin text-white text-[1.6rem]">autorenew</span>
                 </div>
               )}
@@ -300,14 +294,14 @@ export default function Profile() {
               )}
             </div>
 
-            {/* Magnifying glass button for own profile (corner badge) */}
+            {/* Magnifying glass badge — positioned relative to the fixed-size wrapper */}
             {isOwnProfile && profile?.avatar_url && (
               <button
-                className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-surface border-2 border-border-dark flex items-center justify-center cursor-pointer hover:bg-primary hover:text-white hover:border-primary transition-all z-20 text-text-dim"
+                className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-surface border-2 border-border-dark flex items-center justify-center cursor-pointer hover:bg-primary hover:text-white hover:border-primary transition-all z-20 text-text-dim"
                 onClick={(e) => { e.stopPropagation(); setViewingAvatar(true) }}
                 title="View avatar"
               >
-                <span className="material-symbols-outlined filled text-[0.9rem]">search</span>
+                <span className="material-symbols-outlined text-[0.75rem]" style={{ fontSize: '0.75rem' }}>search</span>
               </button>
             )}
 
@@ -441,7 +435,7 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* Avatar Cropper */}
+        {/* Avatar Cropper Modal */}
         {cropImageSrc && (
           <AvatarCropper
             imageSrc={cropImageSrc}

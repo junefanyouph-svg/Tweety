@@ -1,27 +1,164 @@
 import { useState, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import Cropper from 'react-easy-crop'
 
+/* ── canvas helper ─────────────────────────────────────────── */
+function getCroppedImg(imageSrc, pixelCrop) {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = pixelCrop.width
+      canvas.height = pixelCrop.height
+      const ctx = canvas.getContext('2d')
+      ctx.drawImage(
+        img,
+        pixelCrop.x, pixelCrop.y, pixelCrop.width, pixelCrop.height,
+        0, 0, pixelCrop.width, pixelCrop.height
+      )
+      canvas.toBlob(
+        blob => (blob ? resolve(blob) : reject(new Error('Canvas toBlob failed'))),
+        'image/jpeg',
+        0.92
+      )
+    }
+    img.onerror = reject
+    img.src = imageSrc
+  })
+}
+
+/* ── component ─────────────────────────────────────────────── */
 export default function AvatarCropper({ imageSrc, onConfirm, onCancel }) {
   const [crop, setCrop] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
-  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null)
+  const [croppedPixels, setCroppedPixels] = useState(null)
 
-  const onCropComplete = useCallback((_, croppedAreaPixels) => {
-    setCroppedAreaPixels(croppedAreaPixels)
+  const onCropComplete = useCallback((_, pixels) => {
+    setCroppedPixels(pixels)
   }, [])
 
-  const handleConfirm = async () => {
-    const croppedBlob = await getCroppedImg(imageSrc, croppedAreaPixels)
-    onConfirm(croppedBlob)
+  const handleApply = async () => {
+    if (!croppedPixels) return
+    const blob = await getCroppedImg(imageSrc, croppedPixels)
+    onConfirm(blob)
   }
 
-  return (
-    <div className="fixed inset-0 bg-black/85 z-[99999] flex items-center justify-center p-4">
-      <div className="bg-surface rounded-2xl border border-border-dark w-[420px] max-w-full p-6 flex flex-col gap-4 shadow-[0_8px_32px_rgba(0,0,0,0.5)] animate-[popIn_0.3s_ease-out]">
-        <p className="text-text-main font-bold text-center m-0">Adjust your photo</p>
+  /* ── all styles inline to avoid any Tailwind / CSS conflicts ── */
+  const overlay = {
+    position: 'fixed',
+    inset: 0,
+    zIndex: 999999,
+    background: 'rgba(0,0,0,0.85)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+  }
 
-        {/* Cropper */}
-        <div className="relative w-full h-80 rounded-xl overflow-hidden bg-black/50 border border-border-dark">
+  const card = {
+    background: 'var(--color-surface, #1a1d27)',
+    borderRadius: 16,
+    border: '1px solid var(--color-border-dark, #2a2d3a)',
+    width: 400,
+    maxWidth: '95vw',
+    maxHeight: '90vh',
+    padding: 24,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 16,
+    boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+    overflow: 'hidden',
+  }
+
+  const title = {
+    margin: 0,
+    color: 'var(--color-text-main, #e8e8e8)',
+    fontWeight: 700,
+    textAlign: 'center',
+    fontSize: '1rem',
+    flexShrink: 0,
+  }
+
+  const cropperBox = {
+    position: 'relative',
+    width: '100%',
+    height: 300,
+    borderRadius: 12,
+    overflow: 'hidden',
+    background: '#000',
+    border: '1px solid var(--color-border-dark, #2a2d3a)',
+    flexShrink: 0,
+  }
+
+  const sliderRow = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+    padding: '0 4px',
+    flexShrink: 0,
+  }
+
+  const zoomBtn = {
+    width: 32,
+    height: 32,
+    borderRadius: '50%',
+    border: '1px solid var(--color-border-dark, #2a2d3a)',
+    background: 'rgba(255,255,255,0.06)',
+    color: 'var(--color-text-main, #e8e8e8)',
+    fontSize: 18,
+    fontWeight: 700,
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    lineHeight: 1,
+    flexShrink: 0,
+  }
+
+  const slider = {
+    flex: 1,
+    accentColor: 'var(--color-primary, #00BFA6)',
+    cursor: 'pointer',
+    height: 6,
+  }
+
+  const btnRow = {
+    display: 'flex',
+    justifyContent: 'flex-end',
+    gap: 10,
+    flexShrink: 0,
+  }
+
+  const cancelBtn = {
+    padding: '10px 20px',
+    background: 'transparent',
+    color: 'var(--color-text-dim, #555)',
+    border: '1px solid var(--color-border-dark, #2a2d3a)',
+    borderRadius: 12,
+    cursor: 'pointer',
+    fontSize: '0.95rem',
+  }
+
+  const applyBtn = {
+    padding: '10px 20px',
+    background: 'var(--color-primary, #00BFA6)',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 12,
+    cursor: 'pointer',
+    fontSize: '0.95rem',
+    fontWeight: 700,
+    boxShadow: '0 4px 14px rgba(0,191,166,0.3)',
+  }
+
+  const modal = (
+    <div style={overlay} onClick={onCancel}>
+      <div style={card} onClick={e => e.stopPropagation()}>
+        <p style={title}>Adjust your photo</p>
+
+        {/* Crop area */}
+        <div style={cropperBox}>
           <Cropper
             image={imageSrc}
             crop={crop}
@@ -35,59 +172,46 @@ export default function AvatarCropper({ imageSrc, onConfirm, onCancel }) {
           />
         </div>
 
-        {/* Zoom Slider */}
-        <div className="flex items-center gap-3 px-1">
-          <span className="material-symbols-outlined filled text-text-dim text-[0.8rem]">magnifying-glass-minus</span>
+        {/* Zoom controls */}
+        <div style={sliderRow}>
+          <button
+            type="button"
+            style={zoomBtn}
+            onClick={() => setZoom(z => Math.max(1, +(z - 0.2).toFixed(2)))}
+          >
+            −
+          </button>
           <input
             type="range"
             min={1}
             max={3}
             step={0.01}
             value={zoom}
-            onChange={(e) => setZoom(Number(e.target.value))}
-            className="flex-1 accent-primary cursor-pointer h-1 bg-white/10 rounded-lg appearance-none"
+            onChange={e => setZoom(Number(e.target.value))}
+            style={slider}
           />
-          <span className="material-symbols-outlined filled text-text-dim text-[0.8rem]">magnifying-glass-plus</span>
+          <button
+            type="button"
+            style={zoomBtn}
+            onClick={() => setZoom(z => Math.min(3, +(z + 0.2).toFixed(2)))}
+          >
+            +
+          </button>
         </div>
 
-        {/* Buttons */}
-        <div className="flex gap-2.5 justify-end mt-2">
-          <button className="py-2.5 px-5 bg-transparent text-text-dim border border-border-dark rounded-xl cursor-pointer text-[0.95rem] hover:bg-white/5 transition-colors" onClick={onCancel}>
+        {/* Action buttons */}
+        <div style={btnRow}>
+          <button type="button" style={cancelBtn} onClick={onCancel}>
             Cancel
           </button>
-          <button className="py-2.5 px-5 bg-primary text-white border-none rounded-xl cursor-pointer text-[0.95rem] font-bold hover:opacity-90 active:scale-95 transition-all shadow-lg" onClick={handleConfirm}>
+          <button type="button" style={applyBtn} onClick={handleApply}>
             Apply
           </button>
         </div>
       </div>
     </div>
   )
-}
 
-// Helper to crop the image
-const getCroppedImg = (imageSrc, croppedAreaPixels) => {
-  return new Promise((resolve) => {
-    const image = new Image()
-    image.src = imageSrc
-    image.onload = () => {
-      const canvas = document.createElement('canvas')
-      canvas.width = croppedAreaPixels.width
-      canvas.height = croppedAreaPixels.height
-      const ctx = canvas.getContext('2d')
-
-      ctx.drawImage(
-        image,
-        croppedAreaPixels.x,
-        croppedAreaPixels.y,
-        croppedAreaPixels.width,
-        croppedAreaPixels.height,
-        0,
-        0,
-        croppedAreaPixels.width,
-        croppedAreaPixels.height
-      )
-
-      canvas.toBlob(resolve, 'image/jpeg', 0.9)
-    }
-  })
+  // Portal so no parent CSS can interfere
+  return createPortal(modal, document.body)
 }
