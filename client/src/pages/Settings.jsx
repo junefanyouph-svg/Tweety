@@ -4,6 +4,7 @@ import { supabase } from '../supabase'
 import { styles } from '../styles/Settings.styles'
 import { invalidateProfile } from '../utils/profileCache'
 import { API_URL } from '../utils/apiUrl'
+import MobilePasswordInput from '../components/MobilePasswordInput'
 
 export default function Settings() {
   const [user, setUser] = useState(null)
@@ -214,16 +215,14 @@ export default function Settings() {
         <h3 style={styles.sectionTitle}>
           <span className="material-symbols-outlined filled">lock</span> Password
         </h3>
-        <input
+        <MobilePasswordInput
           style={styles.input}
-          type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="New password"
         />
-        <input
+        <MobilePasswordInput
           style={{ ...styles.input, marginTop: '10px' }}
-          type="password"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
           placeholder="Confirm new password"

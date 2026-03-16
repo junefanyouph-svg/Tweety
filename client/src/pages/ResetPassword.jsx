@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { styles as loginStyles } from '../styles/Login.styles'
+import MobilePasswordInput from '../components/MobilePasswordInput'
 
 export default function ResetPassword() {
   const [password, setPassword] = useState('')
@@ -86,16 +87,14 @@ export default function ResetPassword() {
           <p style={{ ...loginStyles.link, color: '#00BFA6' }}>Loading…</p>
         ) : (
           <>
-            <input
+            <MobilePasswordInput
               style={loginStyles.input}
-              type="password"
               placeholder="New password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
-            <input
+            <MobilePasswordInput
               style={loginStyles.input}
-              type="password"
               placeholder="Confirm new password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}

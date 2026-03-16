@@ -3,6 +3,7 @@ import { supabase } from '../supabase'
 import { useNavigate, Link } from 'react-router-dom'
 import { saveAccount } from '../utils/accountStore'
 import { API_URL } from '../utils/apiUrl'
+import MobilePasswordInput from '../components/MobilePasswordInput'
 
 export default function SignUp() {
   const [email, setEmail] = useState('')
@@ -101,9 +102,8 @@ export default function SignUp() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
-        <input
+        <MobilePasswordInput
           style={styles.input}
-          type="password"
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}

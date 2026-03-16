@@ -252,10 +252,18 @@ export default function Profile() {
         {/* Profile Card */}
         <div className="bg-surface rounded-2xl p-6 my-5 border border-border-dark flex gap-5 items-start max-sm:flex-col">
           <div
-            className={`relative inline-block ${isOwnProfile ? 'cursor-pointer group' : 'cursor-default'}`}
+            className={`relative inline-block ${isOwnProfile ? 'cursor-pointer group' : profile?.avatar_url ? 'cursor-pointer group' : 'cursor-default'}`}
             onMouseEnter={() => setAvatarHovered(true)}
             onMouseLeave={() => setAvatarHovered(false)}
-            onClick={() => isOwnProfile && !avatarUploading && avatarInputRef.current.click()}
+            onClick={() => {
+              if (isOwnProfile) {
+                // Owner: clicking uploads a new avatar
+                if (!avatarUploading) avatarInputRef.current.click()
+              } else if (profile?.avatar_url) {
+                // Visitor: clicking views the avatar
+                setViewingAvatar(true)
+              }
+            }}
           >
             <div className="relative overflow-hidden rounded-full border-[3px] border-primary shadow-xl">
               {profile?.avatar_url ? (
@@ -277,13 +285,31 @@ export default function Profile() {
                 </div>
               )}
 
-              {/* Hover overlay */}
+              {/* Own profile: hover shows camera icon */}
               {isOwnProfile && !avatarUploading && (
                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                   <span className="material-symbols-outlined filled text-white text-[1.3rem]">photo_camera</span>
                 </div>
               )}
+
+              {/* Other profile: hover shows magnifying glass */}
+              {!isOwnProfile && profile?.avatar_url && !avatarUploading && (
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  <span className="material-symbols-outlined filled text-white text-[1.3rem]">search</span>
+                </div>
+              )}
             </div>
+
+            {/* Magnifying glass button for own profile (corner badge) */}
+            {isOwnProfile && profile?.avatar_url && (
+              <button
+                className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-surface border-2 border-border-dark flex items-center justify-center cursor-pointer hover:bg-primary hover:text-white hover:border-primary transition-all z-20 text-text-dim"
+                onClick={(e) => { e.stopPropagation(); setViewingAvatar(true) }}
+                title="View avatar"
+              >
+                <span className="material-symbols-outlined filled text-[0.9rem]">search</span>
+              </button>
+            )}
 
             {/* Upload input */}
             {isOwnProfile && (

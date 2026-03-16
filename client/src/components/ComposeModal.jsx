@@ -299,9 +299,24 @@ export default function ComposeModal({ isOpen, onClose, onSuccess }) {
     // Push a fake history entry so hardware "back" closes compose
     window.history.pushState({ compose: true }, '')
     
-    // We removed the auto-detect Android back button/keyboard dismiss logic because it
-    // incorrectly triggers when opening the file picker on mobile, closing the draft.
-    // The popstate listener below handles the actual hardware back button correctly.
+    // Auto-detect Android back button dismissing keyboard (viewport height increases significantly)
+    let initialVpHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight
+    const handleVpResize = () => {
+      if (!window.visualViewport) return
+      const currentHeight = window.visualViewport.height
+      // If height increased by > 100px (keyboard closed by system back button)
+      if (currentHeight - initialVpHeight > 100) {
+        closeModal()
+        // Safely pop state if it hasn't been popped
+        if (window.history.state?.compose) window.history.back()
+      }
+      initialVpHeight = currentHeight
+    }
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleVpResize)
+    }
+
     const handlePopState = () => {
       closeModal()
     }
@@ -311,6 +326,9 @@ export default function ComposeModal({ isOpen, onClose, onSuccess }) {
       document.body.style.overflow = prevBodyOverflow
       document.documentElement.style.overflow = prevHtmlOverflow
       window.removeEventListener('popstate', handlePopState)
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', handleVpResize)
+      }
     }
   }, [isOpen])
 

@@ -3,6 +3,7 @@ import { supabase } from '../supabase'
 import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { saveAccount } from '../utils/accountStore'
 import { API_URL } from '../utils/apiUrl'
+import MobilePasswordInput from '../components/MobilePasswordInput'
 
 export default function Login() {
   const [identifier, setIdentifier] = useState('') // email or username
@@ -92,9 +93,8 @@ export default function Login() {
           value={identifier}
           onChange={(e) => setIdentifier(e.target.value)}
         />
-        <input
+        <MobilePasswordInput
           style={styles.input}
-          type="password"
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
