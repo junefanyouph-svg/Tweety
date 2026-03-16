@@ -52,22 +52,24 @@ export default function Login() {
     }
 
     setLoading(true)
-    const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password })
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password })
 
-    if (error) {
-      setError(error.message)
-      setLoading(false)
-    } else {
-      // Save account session to local store for multi-account switching
-      const { data: { session } } = await supabase.auth.getSession()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (session && user) {
-        const profileRes = await fetch(`${API_URL}/profiles/${user.user_metadata.username}`)
-        const profile = await profileRes.json()
-        saveAccount(session, profile)
+      if (error) {
+        setError(error.message)
+      } else {
+        // Save account session to local store for multi-account switching
+        const { data: { session } } = await supabase.auth.getSession()
+        const { data: { user } } = await supabase.auth.getUser()
+        if (session && user) {
+          const profileRes = await fetch(`${API_URL}/profiles/${user.user_metadata.username}`)
+          const profile = await profileRes.json()
+          saveAccount(session, profile)
+        }
+        navigate(isAddMode ? '/switch-account' : '/feed')
       }
+    } finally {
       setLoading(false)
-      navigate(isAddMode ? '/switch-account' : '/feed')
     }
   }
 
@@ -105,11 +107,11 @@ export default function Login() {
         />
         {error && <p style={styles.error}>{error}</p>}
         <button 
-          style={{...styles.button, opacity: loading ? 0.7 : 1, cursor: loading ? 'not-allowed' : 'pointer'}} 
+          style={{...styles.button, opacity: loading ? 0.5 : 1, cursor: loading ? 'not-allowed' : 'pointer', pointerEvents: loading ? 'none' : 'auto'}} 
           type="submit" 
           disabled={loading}
         >
-          {loading ? 'Logging In...' : 'Log In'}
+          Log In
         </button>
         <p style={styles.link}>
           <Link to="/forgot-password">Forgot password?</Link>

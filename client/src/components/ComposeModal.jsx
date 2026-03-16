@@ -327,11 +327,11 @@ export default function ComposeModal({ isOpen, onClose, onSuccess }) {
             <span className="material-symbols-outlined filled">close</span>
           </button>
           <button
-            className={`py-2 px-6 bg-primary text-white border-none rounded-full text-[0.9rem] font-bold transition-all ${((!content.trim() && !imagePreview && !youtubeData) || uploading) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-primary-hover active:scale-95'}`}
+            className={`py-2 px-6 bg-primary text-white border-none rounded-full text-[0.9rem] font-bold transition-all ${((!content.trim() && !imagePreview && !youtubeData) || uploading) ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'cursor-pointer hover:bg-primary-hover active:scale-95'}`}
             onClick={handlePost}
             disabled={(!content.trim() && !imagePreview && !youtubeData) || uploading}
           >
-            {uploading ? 'Posting...' : 'Post'}
+            Post
           </button>
         </div>
       )}
@@ -435,11 +435,11 @@ export default function ComposeModal({ isOpen, onClose, onSuccess }) {
               {content.length}/280
             </span>
             <button
-              className={`py-2 px-7 bg-primary text-white border-none rounded-[20px] text-[0.95rem] font-bold transition-all ${((!content.trim() && !imagePreview && !youtubeData) || uploading) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-primary-hover active:scale-95'}`}
+              className={`py-2 px-7 bg-primary text-white border-none rounded-[20px] text-[0.95rem] font-bold transition-all ${((!content.trim() && !imagePreview && !youtubeData) || uploading) ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'cursor-pointer hover:bg-primary-hover active:scale-95'}`}
               onClick={handlePost}
               disabled={(!content.trim() && !imagePreview && !youtubeData) || uploading}
             >
-              {uploading ? 'Posting...' : 'Post'}
+              Post
             </button>
           </div>
         </div>

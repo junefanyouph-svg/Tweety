@@ -29,7 +29,7 @@ function getCroppedImg(imageSrc, pixelCrop) {
 }
 
 /* ── component ─────────────────────────────────────────────── */
-export default function AvatarCropper({ imageSrc, onConfirm, onCancel }) {
+export default function AvatarCropper({ imageSrc, onConfirm, onCancel, isSubmitting = false }) {
   const [crop, setCrop] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
   const [croppedPixels, setCroppedPixels] = useState(null)
@@ -136,8 +136,12 @@ export default function AvatarCropper({ imageSrc, onConfirm, onCancel }) {
     color: 'var(--color-text-dim, #555)',
     border: '1px solid var(--color-border-dark, #2a2d3a)',
     borderRadius: 12,
-    cursor: 'pointer',
+    cursor: isSubmitting ? 'not-allowed' : 'pointer',
     fontSize: '0.95rem',
+    fontWeight: 700,
+    opacity: isSubmitting ? 0.5 : 1,
+    flexShrink: 0,
+    pointerEvents: isSubmitting ? 'none' : 'auto',
   }
 
   const applyBtn = {
@@ -146,9 +150,12 @@ export default function AvatarCropper({ imageSrc, onConfirm, onCancel }) {
     color: '#fff',
     border: 'none',
     borderRadius: 12,
-    cursor: 'pointer',
+    cursor: isSubmitting ? 'not-allowed' : 'pointer',
     fontSize: '0.95rem',
     fontWeight: 700,
+    opacity: isSubmitting ? 0.5 : 1,
+    flexShrink: 0,
+    pointerEvents: isSubmitting ? 'none' : 'auto',
     boxShadow: '0 4px 14px rgba(0,191,166,0.3)',
   }
 
@@ -201,10 +208,10 @@ export default function AvatarCropper({ imageSrc, onConfirm, onCancel }) {
 
         {/* Action buttons */}
         <div style={btnRow}>
-          <button type="button" style={cancelBtn} onClick={onCancel}>
+          <button type="button" style={cancelBtn} onClick={onCancel} disabled={isSubmitting}>
             Cancel
           </button>
-          <button type="button" style={applyBtn} onClick={handleApply}>
+          <button type="button" style={applyBtn} onClick={handleApply} disabled={isSubmitting}>
             Apply
           </button>
         </div>

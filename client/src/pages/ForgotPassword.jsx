@@ -22,15 +22,17 @@ export default function ForgotPassword() {
 
     setLoading(true)
     const siteUrl = import.meta.env.VITE_SITE_URL || window.location.origin
-    const { error } = await supabase.auth.resetPasswordForEmail(trimmed, {
-      redirectTo: `${siteUrl}/reset-password`
-    })
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(trimmed, {
+        redirectTo: `${siteUrl}/reset-password`
+      })
 
-    if (error) {
-      setError(error.message)
-      setLoading(false)
-    } else {
-      setMessage('A reset link has been sent to your email.')
+      if (error) {
+        setError(error.message)
+      } else {
+        setMessage('A reset link has been sent to your email.')
+      }
+    } finally {
       setLoading(false)
     }
   }
@@ -66,11 +68,11 @@ export default function ForgotPassword() {
           <p style={{ ...loginStyles.error, color: '#00BFA6' }}>{message}</p>
         )}
         <button 
-          style={{...loginStyles.button, opacity: loading ? 0.7 : 1, cursor: loading ? 'not-allowed' : 'pointer'}} 
+          style={{...loginStyles.button, opacity: loading ? 0.5 : 1, cursor: loading ? 'not-allowed' : 'pointer', pointerEvents: loading ? 'none' : 'auto'}} 
           type="submit" 
           disabled={loading}
         >
-          {loading ? 'Sending...' : 'Send reset link'}
+          Send reset link
         </button>
         <p style={loginStyles.link}>
           Remembered your password? <Link to="/">Back to login</Link>

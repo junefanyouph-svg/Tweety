@@ -24,6 +24,8 @@ export default function Profile() {
   const [loading, setLoading] = useState(true)
   const [postsLoading, setPostsLoading] = useState(true)
   const [avatarUploading, setAvatarUploading] = useState(false)
+  const [isFollowingSubmitting, setIsFollowingSubmitting] = useState(false)
+  const [isSavingBio, setIsSavingBio] = useState(false)
   const avatarInputRef = useRef(null)
   const [viewingAvatar, setViewingAvatar] = useState(false)
   const navigate = useNavigate()
@@ -139,80 +141,91 @@ export default function Profile() {
   }
 
   const handleCropConfirm = async (croppedBlob) => {
-    setCropImageSrc(null)
-    if (avatarInputRef.current) avatarInputRef.current.value = ''
     setAvatarUploading(true)
+    try {
+      const fileName = `${profile.user_id}-${Date.now()}.jpg`
+      const { error } = await supabase.storage.from('avatars').upload(fileName, croppedBlob, { upsert: true })
 
-    const fileName = `${profile.user_id}-${Date.now()}.jpg`
-    const { error } = await supabase.storage.from('avatars').upload(fileName, croppedBlob, { upsert: true })
+      if (!error) {
+        const { data } = supabase.storage.from('avatars').getPublicUrl(fileName)
+        const avatar_url = `${data.publicUrl}?t=${Date.now()}`
+        await supabase.from('profiles').update({ avatar_url }).eq('user_id', profile.user_id)
 
-    if (!error) {
-      const { data } = supabase.storage.from('avatars').getPublicUrl(fileName)
-      const avatar_url = `${data.publicUrl}?t=${Date.now()}`
-      await supabase.from('profiles').update({ avatar_url }).eq('user_id', profile.user_id)
+        invalidateProfile(username)
+        invalidateCache(`profile-${username}`)
 
-      invalidateProfile(username)
-      invalidateCache(`profile-${username}`)
+        const updatedProfile = { ...profile, avatar_url }
+        setProfile(updatedProfile)
 
-      const updatedProfile = { ...profile, avatar_url }
-      setProfile(updatedProfile)
+        setPosts(prev => prev.map(p => ({
+          ...p,
+          profiles: { ...p.profiles, avatar_url }
+        })))
 
-      setPosts(prev => prev.map(p => ({
-        ...p,
-        profiles: { ...p.profiles, avatar_url }
-      })))
-
-      window.dispatchEvent(new CustomEvent('tweety_profile_updated', { detail: { user_id: profile.user_id, avatar_url } }))
+        window.dispatchEvent(new CustomEvent('tweety_profile_updated', { detail: { user_id: profile.user_id, avatar_url } }))
+      }
+    } finally {
+      setAvatarUploading(false)
+      setCropImageSrc(null)
+      if (avatarInputRef.current) avatarInputRef.current.value = ''
     }
-
-    setAvatarUploading(false)
   }
 
   const handleFollow = async () => {
-    if (isFollowing) {
-      await fetch(`${API_URL}/followers`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ follower_id: user.id, following_id: profile.user_id })
-      })
-      setIsFollowing(false)
-      setStats(prev => ({ ...prev, followers: prev.followers - 1 }))
-    } else {
-      await fetch(`${API_URL}/followers`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ follower_id: user.id, following_id: profile.user_id })
-      })
-      await fetch(`${API_URL}/notifications`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          recipient_id: profile.user_id,
-          sender_id: user.id,
-          sender_username: user.user_metadata.username,
-          type: 'follow',
-          post_id: null
+    setIsFollowingSubmitting(true)
+    try {
+      if (isFollowing) {
+        await fetch(`${API_URL}/followers`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ follower_id: user.id, following_id: profile.user_id })
         })
-      })
-      setIsFollowing(true)
-      setStats(prev => ({ ...prev, followers: prev.followers + 1 }))
+        setIsFollowing(false)
+        setStats(prev => ({ ...prev, followers: prev.followers - 1 }))
+      } else {
+        await fetch(`${API_URL}/followers`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ follower_id: user.id, following_id: profile.user_id })
+        })
+        await fetch(`${API_URL}/notifications`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            recipient_id: profile.user_id,
+            sender_id: user.id,
+            sender_username: user.user_metadata.username,
+            type: 'follow',
+            post_id: null
+          })
+        })
+        setIsFollowing(true)
+        setStats(prev => ({ ...prev, followers: prev.followers + 1 }))
+      }
+    } finally {
+      setIsFollowingSubmitting(false)
     }
   }
 
   const handleSaveBio = async () => {
-    await fetch(`${API_URL}/profiles`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: user.id, username, bio })
-    })
+    setIsSavingBio(true)
+    try {
+      await fetch(`${API_URL}/profiles`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id, username, bio })
+      })
 
-    // Invalidate caches
-    invalidateProfile(username)
-    invalidateCache(`profile-${username}`)
+      // Invalidate caches
+      invalidateProfile(username)
+      invalidateCache(`profile-${username}`)
 
-    setProfile(prev => ({ ...prev, bio }))
-    window.dispatchEvent(new CustomEvent('tweety_profile_updated', { detail: { user_id: profile.user_id, bio } }));
-    setIsEditing(false)
+      setProfile(prev => ({ ...prev, bio }))
+      window.dispatchEvent(new CustomEvent('tweety_profile_updated', { detail: { user_id: profile.user_id, bio } }));
+      setIsEditing(false)
+    } finally {
+      setIsSavingBio(false)
+    }
   }
 
   const handleDelete = async (id) => {
@@ -347,8 +360,8 @@ export default function Profile() {
                     const isBioChanged = bio !== (profile?.bio || '')
                     return (
                       <button
-                        disabled={!isBioChanged}
-                        className={`py-1.5 px-4 text-[0.85rem] font-bold rounded-lg transition-all ${isBioChanged ? 'bg-primary text-white hover:opacity-90' : 'bg-white/5 text-text-dim cursor-not-allowed opacity-50'}`}
+                        disabled={!isBioChanged || isSavingBio}
+                        className={`py-1.5 px-4 text-[0.85rem] font-bold rounded-lg transition-all ${isBioChanged ? 'bg-primary text-white hover:opacity-90' : 'bg-white/5 text-text-dim cursor-not-allowed opacity-50'} ${isSavingBio ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}`}
                         onClick={handleSaveBio}
                       >
                         Save
@@ -356,7 +369,8 @@ export default function Profile() {
                     )
                   })()}
                   <button
-                    className="py-1.5 px-4 bg-red-500/10 text-red-500 text-[0.85rem] font-bold border border-red-500/20 rounded-lg hover:bg-red-500/20 transition-colors"
+                    className={`py-1.5 px-4 bg-red-500/10 text-red-500 text-[0.85rem] font-bold border border-red-500/20 rounded-lg transition-colors ${isSavingBio ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:bg-red-500/20'}`}
+                    disabled={isSavingBio}
                     onClick={() => {
                       setIsEditing(false)
                       setBio(profile?.bio || '')
@@ -373,8 +387,9 @@ export default function Profile() {
             {!isOwnProfile && (
               <div className="flex gap-2 mb-5">
                 <button
-                  className={`py-1.5 px-5 rounded-lg text-[0.85rem] font-bold border transition-all ${isFollowing ? 'border-primary text-primary hover:bg-primary/10' : 'bg-primary text-white border-primary hover:opacity-90 active:scale-95'}`}
+                  className={`py-1.5 px-5 rounded-lg text-[0.85rem] font-bold border transition-all ${isFollowing ? 'border-primary text-primary hover:bg-primary/10' : 'bg-primary text-white border-primary hover:opacity-90 active:scale-95'} ${isFollowingSubmitting ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}`}
                   onClick={handleFollow}
+                  disabled={isFollowingSubmitting}
                 >
                   {isFollowing ? 'Unfollow' : followsMe ? 'Follow Back' : 'Follow'}
                 </button>
@@ -445,6 +460,7 @@ export default function Profile() {
           <AvatarCropper
             imageSrc={cropImageSrc}
             onConfirm={handleCropConfirm}
+            isSubmitting={avatarUploading}
             onCancel={() => {
               setCropImageSrc(null)
               if (avatarInputRef.current) avatarInputRef.current.value = ''

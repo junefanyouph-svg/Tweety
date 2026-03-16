@@ -43,33 +43,35 @@ export default function SignUp() {
     }
 
     setLoading(true)
-    const { data, error } = await supabase.auth.signUp({
-      email: trimmedEmail,
-      password,
-      options: { data: { username: trimmedUsername } }
-    })
-
-    if (error) {
-      setError(error.message)
-      setLoading(false)
-    } else {
-      // Auto create profile
-      await fetch(`${API_URL}/profiles`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: data.user.id,
-          username: trimmedUsername,
-          bio: ''
-        })
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: trimmedEmail,
+        password,
+        options: { data: { username: trimmedUsername } }
       })
-      // Save to account store for multi-account switching
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session) {
-        saveAccount(session, { username: trimmedUsername, display_name: '', avatar_url: null })
+
+      if (error) {
+        setError(error.message)
+      } else {
+        // Auto create profile
+        await fetch(`${API_URL}/profiles`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: data.user.id,
+            username: trimmedUsername,
+            bio: ''
+          })
+        })
+        // Save to account store for multi-account switching
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session) {
+          saveAccount(session, { username: trimmedUsername, display_name: '', avatar_url: null })
+        }
+        navigate('/feed')
       }
+    } finally {
       setLoading(false)
-      navigate('/feed')
     }
   }
 
@@ -114,11 +116,11 @@ export default function SignUp() {
         />
         {error && <p style={styles.error}>{error}</p>}
         <button 
-          style={{...styles.button, opacity: loading ? 0.7 : 1, cursor: loading ? 'not-allowed' : 'pointer'}} 
+          style={{...styles.button, opacity: loading ? 0.5 : 1, cursor: loading ? 'not-allowed' : 'pointer', pointerEvents: loading ? 'none' : 'auto'}} 
           type="submit" 
           disabled={loading}
         >
-          {loading ? 'Signing Up...' : 'Sign Up'}
+          Sign Up
         </button>
         <p style={styles.link}>Already have an account? <Link to="/">Log In</Link></p>
       </form>

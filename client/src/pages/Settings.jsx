@@ -50,18 +50,21 @@ export default function Settings() {
     setLoadingFor('username', true)
     setErrorFor('username', '')
 
-    const res = await fetch(`${API_URL}/settings/username`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: user.id, username })
-    })
+    try {
+      const res = await fetch(`${API_URL}/settings/username`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id, username })
+      })
 
-    const data = await res.json()
-    setLoadingFor('username', false)
+      const data = await res.json()
 
-    if (data.error) return setErrorFor('username', data.error)
-    setSuccessFor('username', true)
-    await supabase.auth.refreshSession()
+      if (data.error) return setErrorFor('username', data.error)
+      setSuccessFor('username', true)
+      await supabase.auth.refreshSession()
+    } finally {
+      setLoadingFor('username', false)
+    }
   }
 
   const handleUpdateDisplayName = async () => {
@@ -69,19 +72,22 @@ export default function Settings() {
     setLoadingFor('displayName', true)
     setErrorFor('displayName', '')
 
-    const res = await fetch(`${API_URL}/settings/displayname`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: user.id, display_name: displayName })
-    })
+    try {
+      const res = await fetch(`${API_URL}/settings/displayname`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id, display_name: displayName })
+      })
 
-    const data = await res.json()
-    setLoadingFor('displayName', false)
+      const data = await res.json()
 
-    if (data.error) return setErrorFor('displayName', data.error)
-    invalidateProfile(user.user_metadata.username)
-    window.dispatchEvent(new CustomEvent('tweety_profile_updated', { detail: { user_id: user.id, display_name: displayName } }));
-    setSuccessFor('displayName', true)
+      if (data.error) return setErrorFor('displayName', data.error)
+      invalidateProfile(user.user_metadata.username)
+      window.dispatchEvent(new CustomEvent('tweety_profile_updated', { detail: { user_id: user.id, display_name: displayName } }));
+      setSuccessFor('displayName', true)
+    } finally {
+      setLoadingFor('displayName', false)
+    }
   }
 
   const handleUpdateEmail = async () => {
@@ -89,17 +95,20 @@ export default function Settings() {
     setLoadingFor('email', true)
     setErrorFor('email', '')
 
-    const res = await fetch(`${API_URL}/settings/email`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: user.id, email })
-    })
+    try {
+      const res = await fetch(`${API_URL}/settings/email`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id, email })
+      })
 
-    const data = await res.json()
-    setLoadingFor('email', false)
+      const data = await res.json()
 
-    if (data.error) return setErrorFor('email', data.error)
-    setSuccessFor('email', true)
+      if (data.error) return setErrorFor('email', data.error)
+      setSuccessFor('email', true)
+    } finally {
+      setLoadingFor('email', false)
+    }
   }
 
   const handleUpdatePassword = async () => {
@@ -109,33 +118,41 @@ export default function Settings() {
     setLoadingFor('password', true)
     setErrorFor('password', '')
 
-    const res = await fetch(`${API_URL}/settings/password`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: user.id, password })
-    })
+    try {
+      const res = await fetch(`${API_URL}/settings/password`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id, password })
+      })
 
-    const data = await res.json()
-    setLoadingFor('password', false)
+      const data = await res.json()
 
-    if (data.error) return setErrorFor('password', data.error)
-    setSuccessFor('password', true)
-    setPassword('')
-    setConfirmPassword('')
+      if (data.error) return setErrorFor('password', data.error)
+      setSuccessFor('password', true)
+      setPassword('')
+      setConfirmPassword('')
+    } finally {
+      setLoadingFor('password', false)
+    }
   }
 
   const handleDeleteAccount = async () => {
-    const res = await fetch(`${API_URL}/settings/account`, {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: user.id })
-    })
+    setLoadingFor('delete', true)
+    try {
+      const res = await fetch(`${API_URL}/settings/account`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id })
+      })
 
-    const data = await res.json()
-    if (data.error) return setErrorFor('delete', data.error)
+      const data = await res.json()
+      if (data.error) return setErrorFor('delete', data.error)
 
-    await supabase.auth.signOut()
-    navigate('/')
+      await supabase.auth.signOut()
+      navigate('/')
+    } finally {
+      setLoadingFor('delete', false)
+    }
   }
 
   return (
@@ -168,7 +185,7 @@ export default function Settings() {
           onClick={handleUpdateDisplayName}
           disabled={loading.displayName || !displayName.trim() || displayName === (profile?.display_name || '')}
         >
-          {loading.displayName ? 'Saving...' : 'Change Display Name'}
+          Change Display Name
         </button>
       </div>
 
@@ -186,8 +203,17 @@ export default function Settings() {
         />
         {errors.username && <p style={styles.error}>{errors.username}</p>}
         {success.username && <p style={styles.successMsg}>✅ Username updated!</p>}
-        <button style={styles.saveBtn} onClick={handleUpdateUsername} disabled={loading.username}>
-          {loading.username ? 'Saving...' : 'Save Username'}
+        <button 
+          style={{
+            ...styles.saveBtn,
+            opacity: loading.username ? 0.5 : 1,
+            cursor: loading.username ? 'not-allowed' : 'pointer',
+            pointerEvents: loading.username ? 'none' : 'auto'
+          }} 
+          onClick={handleUpdateUsername} 
+          disabled={loading.username}
+        >
+          Save Username
         </button>
       </div>
 
@@ -205,8 +231,17 @@ export default function Settings() {
         />
         {errors.email && <p style={styles.error}>{errors.email}</p>}
         {success.email && <p style={styles.successMsg}>✅ Email updated!</p>}
-        <button style={styles.saveBtn} onClick={handleUpdateEmail} disabled={loading.email}>
-          {loading.email ? 'Saving...' : 'Save Email'}
+        <button 
+          style={{
+            ...styles.saveBtn,
+            opacity: loading.email ? 0.5 : 1,
+            cursor: loading.email ? 'not-allowed' : 'pointer',
+            pointerEvents: loading.email ? 'none' : 'auto'
+          }} 
+          onClick={handleUpdateEmail} 
+          disabled={loading.email}
+        >
+          Save Email
         </button>
       </div>
 
@@ -238,7 +273,7 @@ export default function Settings() {
           onClick={handleUpdatePassword} 
           disabled={loading.password || !password.trim()}
         >
-          {loading.password ? 'Saving...' : 'Save Password'}
+          Save Password
         </button>
       </div>
 
@@ -260,8 +295,29 @@ export default function Settings() {
             <h3 style={styles.modalTitle}>Delete Account?</h3>
             <p style={styles.modalText}>This will permanently delete your account and all your data.</p>
             <div style={styles.modalActions}>
-              <button style={styles.cancelBtn} onClick={() => setShowDeleteModal(false)}>Cancel</button>
-              <button style={styles.confirmBtn} onClick={handleDeleteAccount}>Delete Forever</button>
+              <button 
+                style={{
+                  ...styles.cancelBtn,
+                  opacity: loading.delete ? 0.5 : 1,
+                  pointerEvents: loading.delete ? 'none' : 'auto'
+                }} 
+                onClick={() => setShowDeleteModal(false)}
+                disabled={loading.delete}
+              >
+                Cancel
+              </button>
+              <button 
+                style={{
+                  ...styles.confirmBtn,
+                  opacity: loading.delete ? 0.5 : 1,
+                  cursor: loading.delete ? 'not-allowed' : 'pointer',
+                  pointerEvents: loading.delete ? 'none' : 'auto'
+                }} 
+                onClick={handleDeleteAccount}
+                disabled={loading.delete}
+              >
+                Delete Forever
+              </button>
             </div>
           </div>
         </div>

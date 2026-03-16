@@ -267,7 +267,7 @@ export default function BottomNav() {
         {navItems.map(item => (
           <button
             key={item.path}
-            className={`border-none cursor-pointer p-2 px-4 rounded-xl flex items-center justify-center transition-all active:scale-90 ${isActive(item.path) ? 'bg-primary/10 text-primary' : 'bg-transparent text-text-dim hover:bg-white/5'}`}
+            className={`border-none cursor-pointer p-2 px-4 rounded-xl flex items-center justify-center transition-all active:scale-90 ${isActive(item.path) ? 'bg-transparent text-primary' : 'bg-transparent text-text-dim hover:bg-white/5'}`}
             onClick={() => {
               if (item.path === '/feed' && location.pathname === '/feed') {
                 window.scrollTo({ top: 0, behavior: 'smooth' })

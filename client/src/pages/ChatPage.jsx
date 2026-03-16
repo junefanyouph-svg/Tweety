@@ -20,6 +20,7 @@ export default function ChatPage() {
     const [mediaTab, setMediaTab] = useState('photos') // 'photos' or 'videos'
     const [loading, setLoading] = useState(true)
     const [sending, setSending] = useState(false)
+    const [isDeletingChat, setIsDeletingChat] = useState(false)
     const [showSendBtn, setShowSendBtn] = useState(false)
     const [isClosingBtn, setIsClosingBtn] = useState(false)
     const [showPlusMenu, setShowPlusMenu] = useState(false)
@@ -199,38 +200,48 @@ export default function ChatPage() {
     const [deleteType, setDeleteType] = useState(null) // 'me' or 'everyone'
 
     const handleDeleteForMe = async () => {
-        // Find all messages between these users
-        const { data: msgsToUpdate } = await supabase
-            .from('messages')
-            .select('id, sender_id')
-            .or(`and(sender_id.eq.${currentUser.id},recipient_id.eq.${userId}),and(sender_id.eq.${userId},recipient_id.eq.${currentUser.id})`)
-
-        if (!msgsToUpdate) return
-
-        // Update each message setting the delete flag for me
-        for (const msg of msgsToUpdate) {
-            const isMeSender = msg.sender_id === currentUser.id
-            const updateObj = isMeSender ? { deleted_by_sender: true } : { deleted_by_recipient: true }
-
-            await supabase
+        setIsDeletingChat(true)
+        try {
+            // Find all messages between these users
+            const { data: msgsToUpdate } = await supabase
                 .from('messages')
-                .update(updateObj)
-                .eq('id', msg.id)
+                .select('id, sender_id')
+                .or(`and(sender_id.eq.${currentUser.id},recipient_id.eq.${userId}),and(sender_id.eq.${userId},recipient_id.eq.${currentUser.id})`)
+
+            if (!msgsToUpdate) return
+
+            // Update each message setting the delete flag for me
+            for (const msg of msgsToUpdate) {
+                const isMeSender = msg.sender_id === currentUser.id
+                const updateObj = isMeSender ? { deleted_by_sender: true } : { deleted_by_recipient: true }
+
+                await supabase
+                    .from('messages')
+                    .update(updateObj)
+                    .eq('id', msg.id)
+            }
+            navigate('/messages')
+        } finally {
+            setIsDeletingChat(false)
         }
-        navigate('/messages')
     }
 
     const handleDeleteForEveryone = async () => {
-        const { error } = await supabase
-            .from('messages')
-            .delete()
-            .or(`and(sender_id.eq.${currentUser.id},recipient_id.eq.${userId}),and(sender_id.eq.${userId},recipient_id.eq.${currentUser.id})`)
+        setIsDeletingChat(true)
+        try {
+            const { error } = await supabase
+                .from('messages')
+                .delete()
+                .or(`and(sender_id.eq.${currentUser.id},recipient_id.eq.${userId}),and(sender_id.eq.${userId},recipient_id.eq.${currentUser.id})`)
 
-        if (!error) {
-            navigate('/messages')
-        } else {
-            alert('Failed to delete for everyone')
-            setShowDeleteConfirm(false)
+            if (!error) {
+                navigate('/messages')
+            } else {
+                alert('Failed to delete for everyone')
+                setShowDeleteConfirm(false)
+            }
+        } finally {
+            setIsDeletingChat(false)
         }
     }
 
@@ -601,7 +612,7 @@ export default function ChatPage() {
                             <button
                                 style={{
                                     ...styles.sendBtn,
-                                    ...(sending ? { opacity: 0.6 } : {})
+                                    ...(sending ? { opacity: 0.5, cursor: 'not-allowed', pointerEvents: 'none' } : {})
                                 }}
                                 className={isClosingBtn ? "send-btn-outro" : "send-btn-animate"}
                                 type="submit"
@@ -781,20 +792,23 @@ export default function ChatPage() {
                             </p>
                             <div style={styles.confirmActions}>
                                 <button
-                                    style={{ ...styles.confirmBtn, ...styles.confirmDelete }}
+                                    style={{ ...styles.confirmBtn, ...styles.confirmDelete, ...(isDeletingChat ? { opacity: 0.5, cursor: 'not-allowed', pointerEvents: 'none' } : {}) }}
                                     onClick={handleDeleteForMe}
+                                    disabled={isDeletingChat}
                                 >
                                     Delete for me
                                 </button>
                                 <button
-                                    style={{ ...styles.confirmBtn, ...styles.confirmDelete, backgroundColor: '#333', color: '#ff4444', border: '1px solid #ff4444' }}
+                                    style={{ ...styles.confirmBtn, ...styles.confirmDelete, backgroundColor: '#333', color: '#ff4444', border: '1px solid #ff4444', ...(isDeletingChat ? { opacity: 0.5, cursor: 'not-allowed', pointerEvents: 'none' } : {}) }}
                                     onClick={handleDeleteForEveryone}
+                                    disabled={isDeletingChat}
                                 >
                                     Delete for everyone
                                 </button>
                                 <button
-                                    style={{ ...styles.confirmBtn, ...styles.confirmCancel }}
+                                    style={{ ...styles.confirmBtn, ...styles.confirmCancel, ...(isDeletingChat ? { opacity: 0.5, pointerEvents: 'none' } : {}) }}
                                     onClick={() => setShowDeleteConfirm(false)}
+                                    disabled={isDeletingChat}
                                 >
                                     Cancel
                                 </button>

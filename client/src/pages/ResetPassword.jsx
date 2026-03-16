@@ -112,7 +112,7 @@ export default function ResetPassword() {
               type="submit" 
               disabled={loading || !ready}
             >
-              {loading ? 'Updating...' : 'Update password'}
+              Update password
             </button>
             <p style={loginStyles.link}>
               <Link to="/">Back to login</Link>

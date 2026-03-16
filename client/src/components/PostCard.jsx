@@ -65,7 +65,7 @@ const renderContent = (text, navigate, query = '') => {
   })
 }
 
-function ScopedConfirmDialog({ title, message, confirmLabel, onCancel, onConfirm, tone = 'danger' }) {
+function ScopedConfirmDialog({ title, message, confirmLabel, onCancel, onConfirm, tone = 'danger', isSubmitting = false }) {
   const confirmClassName = tone === 'danger'
     ? 'bg-red-500 hover:bg-red-600'
     : 'bg-primary hover:bg-primary-hover'
@@ -82,8 +82,8 @@ function ScopedConfirmDialog({ title, message, confirmLabel, onCancel, onConfirm
         <h3 className="mb-3 text-lg font-bold text-text-main">{title}</h3>
         <p className="mb-5 text-sm text-text-dim leading-relaxed">{message}</p>
         <div className="flex justify-end gap-3">
-          <button className="cursor-pointer rounded-xl border border-border-dark bg-transparent px-5 py-2.5 text-[0.9rem] font-medium text-text-dim transition-all hover:bg-white/5" onClick={onCancel}>Cancel</button>
-          <button className={`cursor-pointer rounded-xl px-5 py-2.5 text-[0.9rem] font-bold text-white shadow-lg transition-all active:scale-95 ${confirmClassName}`} onClick={onConfirm}>{confirmLabel}</button>
+          <button className={`cursor-pointer rounded-xl border border-border-dark bg-transparent px-5 py-2.5 text-[0.9rem] font-medium text-text-dim transition-all hover:bg-white/5 ${isSubmitting ? 'opacity-50 pointer-events-none' : ''}`} onClick={onCancel} disabled={isSubmitting}>Cancel</button>
+          <button className={`cursor-pointer rounded-xl px-5 py-2.5 text-[0.9rem] font-bold text-white shadow-lg transition-all active:scale-95 ${confirmClassName} ${isSubmitting ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}`} onClick={onConfirm} disabled={isSubmitting}>{isSubmitting ? 'Working...' : confirmLabel}</button>
         </div>
       </div>
     </div>,
@@ -127,6 +127,10 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
   const [editingComment, setEditingComment] = useState(null)
   const [editCommentText, setEditCommentText] = useState('')
   const [deleteDialog, setDeleteDialog] = useState(null)
+  const [editPostSubmitting, setEditPostSubmitting] = useState(false)
+  const [editCommentSubmitting, setEditCommentSubmitting] = useState(false)
+  const [isDeletingPost, setIsDeletingPost] = useState(false)
+  const [isDeletingComment, setIsDeletingComment] = useState(false)
   const likesRef = useRef([])
   const menuRef = useRef(null)
   const [hoveredComment, setHoveredComment] = useState(null)
@@ -383,55 +387,70 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
 
   const handleEditPost = async () => {
     if (!editPostText.trim()) return
-    const res = await fetch(`${API_URL}/posts/${post.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content: editPostText })
-    })
-    if (res.ok) {
-      setEditingPost(false)
+    setEditPostSubmitting(true)
+    try {
+      const res = await fetch(`${API_URL}/posts/${post.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: editPostText })
+      })
+      if (res.ok) {
+        setEditingPost(false)
+      }
+    } finally {
+      setEditPostSubmitting(false)
     }
   }
 
   const handleEditComment = async (commentId) => {
     if (!editCommentText.trim()) return
-    const res = await fetch(`${API_URL}/replies/${commentId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content: editCommentText })
-    })
-    if (res.ok) {
-      const updated = await res.json()
-      const updatedComments = commentsRef.current.map(c =>
-        c.id === commentId ? { ...c, content: updated.content, edited: true } : c
-      )
-      commentsRef.current = updatedComments
-      setComments(updatedComments)
-      setEditingComment(null)
-      setEditCommentText('')
+    setEditCommentSubmitting(true)
+    try {
+      const res = await fetch(`${API_URL}/replies/${commentId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: editCommentText })
+      })
+      if (res.ok) {
+        const updated = await res.json()
+        const updatedComments = commentsRef.current.map(c =>
+          c.id === commentId ? { ...c, content: updated.content, edited: true } : c
+        )
+        commentsRef.current = updatedComments
+        setComments(updatedComments)
+        setEditingComment(null)
+        setEditCommentText('')
+      }
+    } finally {
+      setEditCommentSubmitting(false)
     }
   }
 
   const handleDeleteComment = async (commentId) => {
-    const res = await fetch(`${API_URL}/replies/${commentId}`, { method: 'DELETE' })
+    setIsDeletingComment(true)
+    try {
+      const res = await fetch(`${API_URL}/replies/${commentId}`, { method: 'DELETE' })
 
-    if (!res.ok) {
-      let message = 'Failed to delete comment'
+      if (!res.ok) {
+        let message = 'Failed to delete comment'
 
-      try {
-        const errorData = await res.json()
-        message = errorData.error || message
-      } catch {
-        // Ignore parse failures and keep generic message.
+        try {
+          const errorData = await res.json()
+          message = errorData.error || message
+        } catch {
+          // Ignore parse failures and keep generic message.
+        }
+
+        alert(message)
+        return
       }
 
-      alert(message)
-      return
+      setDeletingCommentId(null)
+      setDeleteDialog(null)
+      fetchFnRef.current.fetchComments()
+    } finally {
+      setIsDeletingComment(false)
     }
-
-    setDeletingCommentId(null)
-    setDeleteDialog(null)
-    fetchFnRef.current.fetchComments()
   }
 
   const openDeleteDialog = (type, targetId) => {
@@ -480,27 +499,31 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
 
   const handleComment = async (e, parent_id = null) => {
     const content = parent_id ? replyContent : commentInput
-    if (!content.trim() && !commentImage && !commentGifUrl) return; setCommentSending(true)
-    let imageUrl = commentGifUrl
-    if (commentImage) {
-      const fileName = `comment-${user.id}-${Date.now()}`; const { data } = await supabase.storage.from('post-images').upload(fileName, commentImage)
-      if (data) imageUrl = supabase.storage.from('post-images').getPublicUrl(fileName).data.publicUrl
-    }
-    const res = await fetch(`${API_URL}/replies`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ post_id: post.id, user_id: user.id, username: user.user_metadata.username, content, image_url: imageUrl, parent_id })
-    })
-    const json = await res.json()
-    const serverComment = Array.isArray(json) ? json[0] : json
+    if (!content.trim() && !commentImage && !commentGifUrl) return; 
+    setCommentSending(true)
+    try {
+      let imageUrl = commentGifUrl
+      if (commentImage) {
+        const fileName = `comment-${user.id}-${Date.now()}`; const { data } = await supabase.storage.from('post-images').upload(fileName, commentImage)
+        if (data) imageUrl = supabase.storage.from('post-images').getPublicUrl(fileName).data.publicUrl
+      }
+      const res = await fetch(`${API_URL}/replies`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ post_id: post.id, user_id: user.id, username: user.user_metadata.username, content, image_url: imageUrl, parent_id })
+      })
+      const json = await res.json()
+      const serverComment = Array.isArray(json) ? json[0] : json
 
-    if (serverComment) {
-      fetchFnRef.current.fetchComments()
-      // Notification to the post owner is handled server-side in /routes/comments.js
-      await broadcastComment({ sender_id: user.id, post_id: post.id, comment_id: serverComment.id, action: 'insert', parent_id })
+      if (serverComment) {
+        fetchFnRef.current.fetchComments()
+        // Notification to the post owner is handled server-side in /routes/comments.js
+        await broadcastComment({ sender_id: user.id, post_id: post.id, comment_id: serverComment.id, action: 'insert', parent_id })
+      }
+      if (parent_id) { setReplyingTo(null); setReplyContent('') } else { setCommentInput(''); setCommentImage(null); setCommentImagePreview(null); setCommentGifUrl(null) }
+    } finally {
+      setCommentSending(false)
     }
-    if (parent_id) { setReplyingTo(null); setReplyContent('') } else { setCommentInput(''); setCommentImage(null); setCommentImagePreview(null); setCommentGifUrl(null) }
-    setCommentSending(false)
   }
 
   const handleComposerChange = (e, type, id = null) => {
@@ -635,8 +658,8 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
                   autoFocus
                 />
                 <div className="flex gap-2 mt-2">
-                  <button className="py-1.5 px-4 bg-primary text-white border-none rounded-xl text-[0.82rem] font-bold cursor-pointer hover:bg-primary-hover transition-colors" onClick={() => handleEditComment(comment.id)}>Save</button>
-                  <button className="py-1.5 px-4 bg-transparent text-text-dim border border-border-dark rounded-xl text-[0.82rem] cursor-pointer hover:bg-white/5 transition-colors" onClick={() => setEditingComment(null)}>Cancel</button>
+                  <button className={`py-1.5 px-4 bg-primary text-white border-none rounded-xl text-[0.82rem] font-bold transition-colors ${editCommentSubmitting ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'cursor-pointer hover:bg-primary-hover'}`} onClick={() => handleEditComment(comment.id)} disabled={editCommentSubmitting}>{editCommentSubmitting ? 'Saving...' : 'Save'}</button>
+                  <button className={`py-1.5 px-4 bg-transparent text-text-dim border border-border-dark rounded-xl text-[0.82rem] transition-colors ${editCommentSubmitting ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'cursor-pointer hover:bg-white/5'}`} onClick={() => setEditingComment(null)} disabled={editCommentSubmitting}>Cancel</button>
                 </div>
               </div>
             ) : (
@@ -684,6 +707,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
               anchorLeft={deleteDialog?.anchorLeft ?? window.innerWidth / 2}
               onCancel={() => { setDeletingCommentId(null); setDeleteDialog(null) }}
               onConfirm={() => handleDeleteComment(comment.id)}
+              isSubmitting={isDeletingComment}
             />
           )}
         </div>
@@ -719,9 +743,10 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
                 <div className="pill-input-container">
                   <RichTextEditor placeholder="Start a new reply..." content={replyContent} onChange={(e) => handleComposerChange(e, 'reply', comment.id)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleComment(null, comment.id) } }} minHeight="36px" />
                   <button
-                    className={`circle-action-btn ${(replyContent.trim() || commentImage || commentGifUrl) ? 'send-btn-pop' : 'send-btn-hide'}`}
+                    className={`circle-action-btn ${(replyContent.trim() || commentImage || commentGifUrl) ? 'send-btn-pop' : 'send-btn-hide'} ${commentSending ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}`}
                     style={{ flexShrink: 0, backgroundColor: '#00BFA6', color: 'white', border: 'none', pointerEvents: (replyContent.trim() || commentImage || commentGifUrl) ? 'auto' : 'none' }}
                     onClick={() => handleComment(null, comment.id)}
+                    disabled={commentSending}
                   >
                     <span className="material-symbols-outlined filled">arrow_upward</span>
                   </button>
@@ -839,7 +864,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
               <div className="flex-1 bg-white/5 border border-white/10 rounded-[25px] py-1 px-1.5 pl-4 flex items-center gap-2 relative transition-all focus-within:bg-white/10 focus-within:border-primary">
                 <RichTextEditor textareaRef={commentInputRef} placeholder="Start a new message..." content={commentInput} onChange={(e) => handleComposerChange(e, 'main')} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleComment() } }} minHeight="40px" />
                 <button
-                  className={`w-8 h-8 text-[0.9rem] rounded-full border-none flex items-center justify-center cursor-pointer transition-all shrink-0 bg-primary text-white ${(commentInput.trim() || commentImage || commentGifUrl) ? 'scale-100 opacity-100 animate-[popIn_0.3s_cubic-bezier(0.175,0.885,0.32,1.275)]' : 'scale-0 opacity-0 pointer-events-none'}`}
+                  className={`w-8 h-8 text-[0.9rem] rounded-full border-none flex items-center justify-center transition-all shrink-0 bg-primary text-white ${(commentInput.trim() || commentImage || commentGifUrl) ? 'scale-100 opacity-100 animate-[popIn_0.3s_cubic-bezier(0.175,0.885,0.32,1.275)]' : 'scale-0 opacity-0 pointer-events-none'} ${commentSending ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'cursor-pointer'}`}
                   onClick={handleComment}
                   disabled={commentSending}
                 >
@@ -899,7 +924,17 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
           anchorTop={deleteDialog?.anchorTop ?? window.innerHeight / 2}
           anchorLeft={deleteDialog?.anchorLeft ?? window.innerWidth / 2}
           onCancel={() => { setShowDeleteModal(false); setDeleteDialog(null) }}
-          onConfirm={() => { setShowDeleteModal(false); setDeleteDialog(null); onDelete(post.id) }}
+          onConfirm={async () => { 
+            setIsDeletingPost(true)
+            try {
+              await onDelete(post.id)
+            } finally {
+              setIsDeletingPost(false)
+              setShowDeleteModal(false)
+              setDeleteDialog(null)
+            }
+          }}
+          isSubmitting={isDeletingPost}
         />
       )}
       {editingPost && createPortal(
@@ -916,8 +951,8 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
             <div className="flex justify-between items-center mt-3">
               <span className={`text-[0.82rem] ${editPostText.length > 260 ? 'text-red-500 font-bold' : 'text-text-dim'}`}>{editPostText.length}/280</span>
               <div className="flex gap-2">
-                <button className="py-2 px-5 bg-transparent text-text-dim border border-border-dark rounded-xl text-[0.88rem] cursor-pointer hover:bg-white/5 transition-colors" onClick={() => setEditingPost(false)}>Cancel</button>
-                <button className="py-2 px-5 bg-primary text-white border-none rounded-xl text-[0.88rem] font-bold cursor-pointer hover:bg-primary-hover transition-colors disabled:opacity-50" onClick={handleEditPost} disabled={!editPostText.trim() || editPostText.length > 280}>Save</button>
+                <button className={`py-2 px-5 bg-transparent text-text-dim border border-border-dark rounded-xl text-[0.88rem] transition-colors ${editPostSubmitting ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'cursor-pointer hover:bg-white/5'}`} onClick={() => setEditingPost(false)} disabled={editPostSubmitting}>Cancel</button>
+                <button className={`py-2 px-5 bg-primary text-white border-none rounded-xl text-[0.88rem] font-bold transition-colors ${(!editPostText.trim() || editPostText.length > 280 || editPostSubmitting) ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'cursor-pointer hover:bg-primary-hover'}`} onClick={handleEditPost} disabled={!editPostText.trim() || editPostText.length > 280 || editPostSubmitting}>{editPostSubmitting ? 'Saving...' : 'Save'}</button>
               </div>
             </div>
           </div>

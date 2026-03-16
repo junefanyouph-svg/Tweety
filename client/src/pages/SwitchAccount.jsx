@@ -10,6 +10,7 @@ export default function SwitchAccount() {
     const [currentUserId, setCurrentUserId] = useState(null)
     const [notification, setNotification] = useState('')
     const [switching, setSwitching] = useState(false)
+    const [isRemoving, setIsRemoving] = useState(false)
     const [accountToRemove, setAccountToRemove] = useState(null)
     const navigate = useNavigate()
 
@@ -83,23 +84,28 @@ export default function SwitchAccount() {
     const confirmRemove = async () => {
         if (!accountToRemove) return
 
-        const account = accountToRemove
-        const isCurrent = account.user_id === currentUserId
+        setIsRemoving(true)
+        try {
+            const account = accountToRemove
+            const isCurrent = account.user_id === currentUserId
 
-        removeAccount(account.user_id)
-        const remaining = getAccounts()
-        setAccounts(remaining)
+            removeAccount(account.user_id)
+            const remaining = getAccounts()
+            setAccounts(remaining)
 
-        if (isCurrent) {
-            await supabase.auth.signOut()
-            setCurrentUserId(null)
-        }
+            if (isCurrent) {
+                await supabase.auth.signOut()
+                setCurrentUserId(null)
+            }
 
-        setAccountToRemove(null)
-        showNotification('Account removed')
+            setAccountToRemove(null)
+            showNotification('Account removed')
 
-        if (remaining.length === 0) {
-            setTimeout(() => navigate('/'), 1500)
+            if (remaining.length === 0) {
+                setTimeout(() => navigate('/'), 1500)
+            }
+        } finally {
+            setIsRemoving(false)
         }
     }
 
@@ -134,10 +140,27 @@ export default function SwitchAccount() {
                             You'll need to sign in again to use this account.
                         </p>
                         <div style={styles.modalActions}>
-                            <button style={styles.cancelBtn} onClick={() => setAccountToRemove(null)}>
+                            <button 
+                                style={{
+                                    ...styles.cancelBtn,
+                                    opacity: isRemoving ? 0.5 : 1,
+                                    pointerEvents: isRemoving ? 'none' : 'auto'
+                                }} 
+                                onClick={() => setAccountToRemove(null)}
+                                disabled={isRemoving}
+                            >
                                 Cancel
                             </button>
-                            <button style={styles.confirmBtn} onClick={confirmRemove}>
+                            <button 
+                                style={{
+                                    ...styles.confirmBtn,
+                                    opacity: isRemoving ? 0.5 : 1,
+                                    cursor: isRemoving ? 'not-allowed' : 'pointer',
+                                    pointerEvents: isRemoving ? 'none' : 'auto'
+                                }} 
+                                onClick={confirmRemove}
+                                disabled={isRemoving}
+                            >
                                 Remove
                             </button>
                         </div>

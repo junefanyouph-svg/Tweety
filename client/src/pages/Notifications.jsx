@@ -9,6 +9,7 @@ export default function Notifications() {
   const [notifications, setNotifications] = useState([])
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [deletingIds, setDeletingIds] = useState(new Set())
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -74,8 +75,17 @@ export default function Notifications() {
   }
 
   const handleDelete = async (id) => {
-    await fetch(`${API_URL}/notifications/${id}`, { method: 'DELETE' })
-    setNotifications(prev => prev.filter(n => n.id !== id))
+    setDeletingIds(prev => new Set(prev).add(id))
+    try {
+      await fetch(`${API_URL}/notifications/${id}`, { method: 'DELETE' })
+      setNotifications(prev => prev.filter(n => n.id !== id))
+    } finally {
+      setDeletingIds(prev => {
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
+    }
   }
 
   const getNotificationText = (n) => {
@@ -196,7 +206,11 @@ export default function Notifications() {
                   {new Date(n.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                 </span>
               </div>
-              <button style={styles.deleteBtn} onClick={() => handleDelete(n.id)}>
+              <button 
+                style={{ ...styles.deleteBtn, opacity: deletingIds.has(n.id) ? 0.5 : 1, cursor: deletingIds.has(n.id) ? 'not-allowed' : 'pointer', pointerEvents: deletingIds.has(n.id) ? 'none' : 'auto' }} 
+                onClick={() => handleDelete(n.id)}
+                disabled={deletingIds.has(n.id)}
+              >
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>

@@ -18,8 +18,9 @@ export default function Feed() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    const HEADER_HEIGHT = 52
     const handleScroll = () => {
+      if (!headerRef.current) return
+      const HEADER_HEIGHT = headerRef.current.offsetHeight
       const currentScrollY = window.scrollY
       const delta = currentScrollY - lastScrollY.current
       lastScrollY.current = currentScrollY
@@ -30,9 +31,7 @@ export default function Feed() {
       // At the very top of the page, always fully show
       if (currentScrollY <= 0) headerOffset.current = 0
 
-      if (headerRef.current) {
-        headerRef.current.style.transform = `translateY(${headerOffset.current}px)`
-      }
+      headerRef.current.style.transform = `translateY(${headerOffset.current}px)`
     }
     window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
