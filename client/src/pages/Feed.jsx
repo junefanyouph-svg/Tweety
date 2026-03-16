@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
 
@@ -12,7 +12,23 @@ export default function Feed() {
   const [posts, setPosts] = useState([])
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [isHeaderVisible, setIsHeaderVisible] = useState(true)
+  const lastScrollY = useRef(0)
   const navigate = useNavigate()
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY
+      if (currentScrollY > lastScrollY.current && currentScrollY > 50) {
+        setIsHeaderVisible(false)
+      } else {
+        setIsHeaderVisible(true)
+      }
+      lastScrollY.current = currentScrollY
+    }
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   useEffect(() => {
     const init = async () => {
@@ -95,6 +111,26 @@ export default function Feed() {
 
   return (
     <>
+      {/* Mobile-only Header */}
+      <div 
+        className={`fixed top-0 left-0 w-full z-[100] md:hidden bg-bg-dark/80 backdrop-blur-md border-b border-border-dark flex items-center px-4 py-3 transition-transform duration-300 ease-in-out ${isHeaderVisible ? 'translate-y-0' : '-translate-y-full'}`}
+      >
+        <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+          <div 
+            className="w-7 h-7 bg-primary" 
+            style={{ 
+              maskImage: "url('/Jargon_icon.svg')", 
+              WebkitMaskImage: "url('/Jargon_icon.svg')",
+              maskSize: 'contain',
+              WebkitMaskSize: 'contain',
+              maskRepeat: 'no-repeat',
+              WebkitMaskRepeat: 'no-repeat'
+            }} 
+          />
+          <span className="text-[1.3rem] font-bold text-primary">Jargon</span>
+        </div>
+      </div>
+
       <PullToRefresh onRefresh={fetchPosts}>
         <div className="max-w-[620px] mx-auto w-full box-border pb-6 px-4 max-md:px-0">
           {/* Posts Feed */}
