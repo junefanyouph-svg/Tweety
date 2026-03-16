@@ -111,28 +111,30 @@ export default function Feed() {
 
   return (
     <>
-      {/* Mobile-only Header */}
-      <div 
-        className={`fixed top-0 left-0 w-full z-[100] md:hidden bg-bg-dark/80 backdrop-blur-md border-b border-border-dark flex items-center px-4 py-3 transition-transform duration-300 ease-in-out ${isHeaderVisible ? 'translate-y-0' : '-translate-y-full'}`}
-      >
-        <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-          <div 
-            className="w-7 h-7 bg-primary" 
-            style={{ 
-              maskImage: "url('/Jargon_icon.svg')", 
-              WebkitMaskImage: "url('/Jargon_icon.svg')",
-              maskSize: 'contain',
-              WebkitMaskSize: 'contain',
-              maskRepeat: 'no-repeat',
-              WebkitMaskRepeat: 'no-repeat'
-            }} 
-          />
-          <span className="text-[1.3rem] font-bold text-primary">Jargon</span>
-        </div>
-      </div>
-
       <PullToRefresh onRefresh={fetchPosts}>
         <div className="max-w-[620px] mx-auto w-full box-border pb-6 px-4 max-md:px-0">
+          {/* Mobile-only Header (In-flow) */}
+          <div className={`md:hidden overflow-hidden transition-[max-height,opacity] duration-300 ease-in-out ${isHeaderVisible ? 'max-h-[60px] opacity-100' : 'max-h-0 opacity-0'}`}>
+            <div 
+              className={`bg-bg-dark border-b border-border-dark flex items-center px-4 py-3 transition-transform duration-300 ease-in-out ${isHeaderVisible ? 'translate-y-0' : '-translate-y-full'}`}
+            >
+              <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+                <div 
+                  className="w-7 h-7 bg-primary" 
+                  style={{ 
+                    maskImage: "url('/Jargon_icon.svg')", 
+                    WebkitMaskImage: "url('/Jargon_icon.svg')",
+                    maskSize: 'contain',
+                    WebkitMaskSize: 'contain',
+                    maskRepeat: 'no-repeat',
+                    WebkitMaskRepeat: 'no-repeat'
+                  }} 
+                />
+                <span className="text-[1.3rem] font-bold text-primary">Jargon</span>
+              </div>
+            </div>
+          </div>
+
           {/* Posts Feed */}
           <div className="flex flex-col gap-px pb-8">
             {loading
