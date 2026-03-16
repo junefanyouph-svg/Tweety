@@ -68,7 +68,7 @@ router.post('/', async (req, res) => {
   const { data, error } = await supabase
     .from('posts')
     .insert([insertData])
-    .select()
+    .select('*, profiles(display_name, avatar_url)')
 
   // Combined mention notification logic
   const notifyMentions = async (postId, currentContent, clientMentions, currentUserId, currentUsername) => {
@@ -120,7 +120,7 @@ router.post('/', async (req, res) => {
       const { data: retryData, error: retryError } = await supabase
         .from('posts')
         .insert([{ content, username, user_id, image_url }])
-        .select()
+        .select('*, profiles(display_name, avatar_url)')
 
       if (retryError) {
         console.error('Database error on post retry:', retryError)

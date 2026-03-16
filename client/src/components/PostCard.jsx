@@ -166,11 +166,29 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
   }, [post.id])
 
   useEffect(() => {
-    if (!authorDisplayName || !authorAvatarUrl) {
-      if (!postUsername) return // Avoid calling API with undefined
-      getProfile(postUsername, API_URL).then(d => { if (d) { setAuthorDisplayName(d.display_name || null); setAuthorAvatarUrl(d.avatar_url || null) } })
-    }
+    // Always fetch fresh profile data to catch newly-set avatars (especially for new accounts)
+    if (!postUsername) return
+    getProfile(postUsername, API_URL).then(d => {
+      if (d) {
+        if (d.display_name) setAuthorDisplayName(d.display_name)
+        if (d.avatar_url) setAuthorAvatarUrl(d.avatar_url)
+      }
+    })
   }, [postUsername])
+
+  // Listen for avatar updates from profile page so feed cards update in real-time
+  useEffect(() => {
+    const handleProfileUpdated = (e) => {
+      const detail = e.detail
+      if (!detail) return
+      // Match by user_id (the post's user_id)
+      if (detail.user_id === post.user_id && detail.avatar_url) {
+        setAuthorAvatarUrl(detail.avatar_url)
+      }
+    }
+    window.addEventListener('tweety_profile_updated', handleProfileUpdated)
+    return () => window.removeEventListener('tweety_profile_updated', handleProfileUpdated)
+  }, [post.user_id])
 
   useEffect(() => {
     return () => {

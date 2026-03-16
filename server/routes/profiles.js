@@ -106,7 +106,7 @@ router.post('/', async (req, res) => {
 
   const { data, error } = await supabase
     .from('profiles')
-    .insert([{ user_id, username, bio }])
+    .insert([{ user_id, username, bio, avatar_url: null, display_name: username }])
     .select()
 
   if (error) return res.status(500).json({ error: error.message })
