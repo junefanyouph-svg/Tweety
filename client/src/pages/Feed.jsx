@@ -12,19 +12,27 @@ export default function Feed() {
   const [posts, setPosts] = useState([])
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [isHeaderVisible, setIsHeaderVisible] = useState(true)
   const lastScrollY = useRef(0)
+  const headerOffset = useRef(0)
+  const headerRef = useRef(null)
   const navigate = useNavigate()
 
   useEffect(() => {
+    const HEADER_HEIGHT = 52
     const handleScroll = () => {
       const currentScrollY = window.scrollY
-      if (currentScrollY > lastScrollY.current && currentScrollY > 50) {
-        setIsHeaderVisible(false)
-      } else {
-        setIsHeaderVisible(true)
-      }
+      const delta = currentScrollY - lastScrollY.current
       lastScrollY.current = currentScrollY
+
+      // Accumulate offset: positive delta (scroll down) pushes header up, negative (scroll up) reveals it
+      headerOffset.current = Math.min(0, Math.max(-HEADER_HEIGHT, headerOffset.current - delta))
+
+      // At the very top of the page, always fully show
+      if (currentScrollY <= 0) headerOffset.current = 0
+
+      if (headerRef.current) {
+        headerRef.current.style.transform = `translateY(${headerOffset.current}px)`
+      }
     }
     window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
@@ -113,25 +121,25 @@ export default function Feed() {
     <>
       <PullToRefresh onRefresh={fetchPosts}>
         <div className="max-w-[620px] mx-auto w-full box-border pb-6 px-4 max-md:px-0">
-          {/* Mobile-only Header (In-flow) */}
-          <div className={`md:hidden overflow-hidden transition-[max-height,opacity] duration-300 ease-in-out ${isHeaderVisible ? 'max-h-[60px] opacity-100' : 'max-h-0 opacity-0'}`}>
-            <div 
-              className={`bg-bg-dark border-b border-border-dark flex items-center px-4 py-3 transition-transform duration-300 ease-in-out ${isHeaderVisible ? 'translate-y-0' : '-translate-y-full'}`}
-            >
-              <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-                <div 
-                  className="w-7 h-7 bg-primary" 
-                  style={{ 
-                    maskImage: "url('/Jargon_icon.svg')", 
-                    WebkitMaskImage: "url('/Jargon_icon.svg')",
-                    maskSize: 'contain',
-                    WebkitMaskSize: 'contain',
-                    maskRepeat: 'no-repeat',
-                    WebkitMaskRepeat: 'no-repeat'
-                  }} 
-                />
-                <span className="text-[1.3rem] font-bold text-primary">Jargon</span>
-              </div>
+          {/* Mobile-only Sticky Header */}
+          <div
+            ref={headerRef}
+            className="md:hidden sticky top-0 z-[50] bg-bg-dark border-b border-border-dark flex items-center px-4 py-3"
+            style={{ willChange: 'transform' }}
+          >
+            <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+              <div 
+                className="w-7 h-7 bg-primary" 
+                style={{ 
+                  maskImage: "url('/Jargon_icon.svg')", 
+                  WebkitMaskImage: "url('/Jargon_icon.svg')",
+                  maskSize: 'contain',
+                  WebkitMaskSize: 'contain',
+                  maskRepeat: 'no-repeat',
+                  WebkitMaskRepeat: 'no-repeat'
+                }} 
+              />
+              <span className="text-[1.3rem] font-bold text-primary">Jargon</span>
             </div>
           </div>
 
