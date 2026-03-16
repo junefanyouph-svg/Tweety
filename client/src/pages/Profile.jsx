@@ -232,7 +232,7 @@ export default function Profile() {
   }
 
   if (loading) return (
-    <div className="max-w-[620px] mx-auto px-3 w-full box-border">
+    <div className="max-w-[620px] mx-auto w-full box-border px-4 max-md:px-0">
       <ProfileSkeleton />
       <div className="mt-8 pb-8">
         <h3 className="text-[1.1rem] font-bold text-text-main mb-4 pb-3 border-b border-border-dark">Posts</h3>
@@ -244,9 +244,9 @@ export default function Profile() {
   return (
     <>
       <PullToRefresh onRefresh={handleRefresh}>
-        <div className="max-w-[620px] mx-auto px-3 w-full box-border pb-8">
+        <div className="max-w-[620px] mx-auto w-full box-border pb-8 px-4 max-md:px-0">
         {/* Profile Card */}
-        <div className="bg-surface rounded-2xl p-6 my-5 border border-border-dark flex gap-5 items-start max-sm:flex-col">
+        <div className="bg-surface rounded-none p-6 border border-border-dark flex gap-5 items-start max-sm:flex-col">
           {/* Avatar Container — fixed size prevents layout shift */}
           <div className="relative w-[86px] h-[86px] shrink-0">
             {/* Clickable avatar area */}
@@ -417,7 +417,7 @@ export default function Profile() {
             Posts
             <span className="text-text-dim text-[0.8rem] font-normal">{posts.length} items</span>
           </h3>
-          <div className="flex flex-col gap-[5px]">
+          <div className="flex flex-col gap-px">
             {postsLoading
               ? Array(3).fill(0).map((_, i) => <PostSkeleton key={i} />)
               : posts.length === 0
@@ -432,6 +432,11 @@ export default function Profile() {
                   />
                 ))
             }
+            {!postsLoading && posts.length > 0 && (
+              <div className="flex flex-col items-center justify-center py-10 text-text-dim text-[0.85rem] gap-1 opacity-60">
+                <span>You're all caught up!</span>
+              </div>
+            )}
           </div>
         </div>
 

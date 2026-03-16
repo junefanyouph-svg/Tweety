@@ -773,7 +773,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
 
 
   return (
-    <div className="bg-surface rounded-xl p-5 border border-border-dark mb-0 relative" id={`post-${post.id}`}>
+    <div className="bg-surface rounded-none p-5 border border-border-dark mb-0 relative" id={`post-${post.id}`}>
       {toast && <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-primary text-white py-3 px-6 rounded-xl z-[99999] flex items-center gap-2"><span className="material-symbols-outlined filled">check</span> Link copied</div>}
 
       {/* Navigation Wrapper - Clicks here go to the post page */}

@@ -63,7 +63,7 @@ export function UserCardSkeleton() {
 }
 
 const skeletonStyles = {
-  post: { backgroundColor: 'var(--color-surface)', borderRadius: '16px', padding: '20px', border: '1px solid var(--color-border-dark)', marginBottom: '12px' },
+  post: { backgroundColor: 'var(--color-surface)', borderRadius: '0', padding: '20px', border: '1px solid var(--color-border-dark)', marginBottom: '0' },
   profileCard: { backgroundColor: 'var(--color-surface)', borderRadius: '16px', padding: '24px', margin: '20px 0', border: '1px solid var(--color-border-dark)', display: 'flex', gap: '20px' },
   userCard: { display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', backgroundColor: 'var(--color-surface)', borderRadius: '16px', border: '1px solid var(--color-border-dark)', marginBottom: '12px' },
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' },

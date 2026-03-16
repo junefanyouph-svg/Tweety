@@ -96,9 +96,9 @@ export default function Feed() {
   return (
     <>
       <PullToRefresh onRefresh={fetchPosts}>
-        <div className="max-w-[620px] mx-auto px-3 w-full box-border pb-6">
+        <div className="max-w-[620px] mx-auto w-full box-border pb-6 px-4 max-md:px-0">
           {/* Posts Feed */}
-          <div className="flex flex-col gap-[5px] pb-8 pt-3">
+          <div className="flex flex-col gap-px pb-8">
             {loading
               ? Array(4).fill(0).map((_, i) => <PostSkeleton key={i} />)
               : posts.length === 0
@@ -113,6 +113,12 @@ export default function Feed() {
                   />
                 ))
             }
+            {!loading && posts.length > 0 && (
+              <div className="flex flex-col items-center justify-center py-10 text-text-dim text-[0.85rem] gap-1 opacity-60">
+                <span className="material-symbols-outlined filled text-[1.4rem]">check_circle</span>
+                <span>You're all caught up!</span>
+              </div>
+            )}
           </div>
         </div>
       </PullToRefresh>
