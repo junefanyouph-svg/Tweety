@@ -1052,11 +1052,43 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
       )}
       {viewingImage && createPortal(
         <div className="fixed inset-0 bg-black/85 z-[99999] flex items-center justify-center backdrop-blur-md" onClick={() => setViewingImage(null)}>
-          <div className="relative animate-[popIn_0.3s_ease-out]">
+          <div className="relative animate-[popIn_0.3s_ease-out] flex flex-col items-center group" onClick={(e) => e.stopPropagation()}>
             <button className="absolute -top-10 right-0 text-white cursor-pointer bg-none border-none text-xl hover:text-primary transition-colors" onClick={() => setViewingImage(null)}>
               <span className="material-symbols-outlined filled">close</span>
             </button>
-            <CachedImage src={viewingImage} fallbackSrc={viewingImage} className="max-w-[90vw] max-h-[85vh] rounded-lg shadow-2xl" alt="" />
+            
+            <div className="relative flex items-center justify-center">
+              <CachedImage src={viewingImage} fallbackSrc={viewingImage} className="max-w-[100vw] lg:max-w-[90vw] max-h-[85vh] rounded-lg shadow-2xl object-contain" alt="" />
+              
+              {postImageUrls.indexOf(viewingImage) > 0 && (
+                <button 
+                  className="absolute left-2 md:-left-14 top-1/2 -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 rounded-full bg-black/60 md:bg-white/10 hover:bg-black/80 md:hover:bg-white/20 text-white flex items-center justify-center cursor-pointer border-none transition-colors z-50"
+                  onClick={(e) => { e.stopPropagation(); setViewingImage(postImageUrls[postImageUrls.indexOf(viewingImage) - 1]) }}
+                >
+                  <span className="material-symbols-outlined filled text-[1rem] md:text-[1.2rem]">arrow_back_ios_new</span>
+                </button>
+              )}
+              
+              {postImageUrls.indexOf(viewingImage) > -1 && postImageUrls.indexOf(viewingImage) < postImageUrls.length - 1 && (
+                <button 
+                  className="absolute right-2 md:-right-14 top-1/2 -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 rounded-full bg-black/60 md:bg-white/10 hover:bg-black/80 md:hover:bg-white/20 text-white flex items-center justify-center cursor-pointer border-none transition-colors z-50"
+                  onClick={(e) => { e.stopPropagation(); setViewingImage(postImageUrls[postImageUrls.indexOf(viewingImage) + 1]) }}
+                >
+                  <span className="material-symbols-outlined filled text-[1rem] md:text-[1.2rem]">arrow_forward_ios</span>
+                </button>
+              )}
+            </div>
+
+            {postImageUrls.indexOf(viewingImage) > -1 && postImageUrls.length > 1 && (
+              <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-black/40 px-3 py-1.5 rounded-full z-50">
+                {postImageUrls.map((_, index) => (
+                  <div 
+                    key={index} 
+                    className={`rounded-full transition-all duration-300 ${index === postImageUrls.indexOf(viewingImage) ? 'bg-primary w-2 h-2 scale-110' : 'bg-white/60 w-1.5 h-1.5'}`} 
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>,
         document.body
