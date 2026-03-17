@@ -391,6 +391,31 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
     }
   }
 
+  const attachCommentImage = (file) => {
+    if (!file) return false
+    if (file.size > DEFAULT_IMAGE_UPLOAD_OPTIONS.maxInputBytes) {
+      alert('Image must be under 20 MB before compression.')
+      return true
+    }
+
+    setCommentImage(file)
+    setCommentGifUrl(null)
+    const reader = new FileReader()
+    reader.onloadend = () => setCommentImagePreview(reader.result)
+    reader.readAsDataURL(file)
+    return true
+  }
+
+  const handleCommentPaste = async (e) => {
+    const items = Array.from(e.clipboardData?.items || [])
+    const imageItem = items.find(item => item.type.startsWith('image/'))
+    if (!imageItem) return false
+
+    e.preventDefault()
+    const file = imageItem.getAsFile()
+    return attachCommentImage(file)
+  }
+
   const handleLike = async () => {
     if (!user) return
     const userId = user.id
@@ -789,7 +814,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
                 )}
 
                 <div className="pill-input-container">
-                  <RichTextEditor placeholder="Start a new reply..." content={replyContent} onChange={(e) => handleComposerChange(e, 'reply', comment.id)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleComment(null, comment.id) } }} minHeight="36px" />
+                  <RichTextEditor placeholder="Start a new reply..." content={replyContent} onChange={(e) => handleComposerChange(e, 'reply', comment.id)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleComment(null, comment.id) } }} onPaste={handleCommentPaste} minHeight="36px" />
                   <button
                     className={`circle-action-btn ${(replyContent.trim() || commentImage || commentGifUrl) ? 'send-btn-pop' : 'send-btn-hide'} ${commentSending ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}`}
                     style={{ flexShrink: 0, backgroundColor: '#00BFA6', color: 'white', border: 'none', pointerEvents: (replyContent.trim() || commentImage || commentGifUrl) ? 'auto' : 'none' }}
@@ -910,7 +935,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
               )}
 
               <div className="flex-1 bg-white/5 border border-white/10 rounded-[25px] py-1 px-1.5 pl-4 flex items-center gap-2 relative transition-all focus-within:bg-white/10 focus-within:border-primary">
-                <RichTextEditor textareaRef={commentInputRef} placeholder="Start a new message..." content={commentInput} onChange={(e) => handleComposerChange(e, 'main')} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleComment() } }} minHeight="40px" />
+                <RichTextEditor textareaRef={commentInputRef} placeholder="Start a new message..." content={commentInput} onChange={(e) => handleComposerChange(e, 'main')} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleComment() } }} onPaste={handleCommentPaste} minHeight="40px" />
                 <button
                   className={`w-8 h-8 text-[0.9rem] rounded-full border-none flex items-center justify-center transition-all shrink-0 bg-primary text-white ${(commentInput.trim() || commentImage || commentGifUrl) ? 'scale-100 opacity-100 animate-[popIn_0.3s_cubic-bezier(0.175,0.885,0.32,1.275)]' : 'scale-0 opacity-0 pointer-events-none'} ${commentSending ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'cursor-pointer'}`}
                   onClick={handleComment}

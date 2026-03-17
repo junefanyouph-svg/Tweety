@@ -1,6 +1,6 @@
 import { useRef, useEffect, useCallback } from 'react'
 
-export default function RichTextEditor({ content, onChange, placeholder, textareaRef, minHeight = '100px', style = {}, onKeyDown, autoFocus }) {
+export default function RichTextEditor({ content, onChange, placeholder, textareaRef, minHeight = '100px', style = {}, onKeyDown, onPaste, autoFocus }) {
   const editorRef = useRef(null)
   const isComposingRef = useRef(false)
   const isInternalUpdate = useRef(false)
@@ -141,7 +141,12 @@ export default function RichTextEditor({ content, onChange, placeholder, textare
     }
   }
 
-  const handlePaste = (e) => {
+  const handlePaste = async (e) => {
+    if (onPaste) {
+      const handled = await onPaste(e)
+      if (handled) return
+    }
+
     e.preventDefault()
     const text = e.clipboardData.getData('text/plain')
     document.execCommand('insertText', false, text)
