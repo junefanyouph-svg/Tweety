@@ -4,6 +4,7 @@ import { supabase } from '../supabase'
 import { styles } from '../styles/Chat.styles'
 import GifPicker from '../components/GifPicker'
 import { API_URL } from '../utils/apiUrl'
+import { DEFAULT_IMAGE_UPLOAD_OPTIONS, compressImageForUpload, getUploadExtension } from '../utils/imageUpload'
 
 export default function ChatPage() {
     const { userId } = useParams() // recipient user id or a conversation id
@@ -181,6 +182,13 @@ export default function ChatPage() {
         if (!file) return
 
         const type = file.type.startsWith('video') ? 'video' : 'image'
+
+        if (type === 'image' && file.size > DEFAULT_IMAGE_UPLOAD_OPTIONS.maxInputBytes) {
+            alert('Image must be under 20 MB before compression.')
+            if (fileInputRef.current) fileInputRef.current.value = ''
+            return
+        }
+
         setMediaFile(file)
         setMediaType(type)
 
@@ -303,11 +311,16 @@ export default function ChatPage() {
         let mediaUrl = null
         try {
             if (attachedFile) {
-                const ext = attachedFile.name.split('.').pop()
-                const fileName = `chat-${currentUser.id}-${Date.now()}.${ext}`
+                const isImage = attachedType === 'image'
+                const optimized = isImage
+                    ? await compressImageForUpload(attachedFile, DEFAULT_IMAGE_UPLOAD_OPTIONS)
+                    : null
+                const uploadFile = optimized?.file || attachedFile
+                const uploadMimeType = optimized?.mimeType || attachedFile.type
+                const fileName = `chat-${currentUser.id}-${Date.now()}.${getUploadExtension(uploadFile, uploadMimeType)}`
                 const { error: uploadError } = await supabase.storage
                     .from('post-images')
-                    .upload(fileName, attachedFile)
+                    .upload(fileName, uploadFile, uploadMimeType ? { contentType: uploadMimeType } : {})
 
                 if (!uploadError) {
                     const { data: publicData } = supabase.storage
@@ -315,7 +328,7 @@ export default function ChatPage() {
                         .getPublicUrl(fileName)
                     mediaUrl = publicData.publicUrl
                 } else {
-                    console.error('Upload error:', uploadError)
+                    throw uploadError
                 }
             } else if (attachedPreview && !attachedFile) {
                 mediaUrl = attachedPreview
@@ -344,6 +357,7 @@ export default function ChatPage() {
             }
         } catch (err) {
             console.error('Send error:', err)
+            alert(err.message || 'We couldn\'t optimize that image for upload. Try a smaller image.')
             // Mark as failed
             setMessages(prev => prev.map(m => m.id === tempId ? { ...m, status: 'error' } : m))
         } finally {

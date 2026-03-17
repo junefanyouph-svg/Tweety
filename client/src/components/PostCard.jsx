@@ -10,6 +10,7 @@ import RichTextEditor from './RichTextEditor'
 import { broadcastLike, broadcastComment, broadcastCommentLike } from '../utils/interactionsChannel'
 import { API_URL } from '../utils/apiUrl'
 import { formatDate } from '../utils/formatDate'
+import { DEFAULT_IMAGE_UPLOAD_OPTIONS, compressImageForUpload, getUploadExtension } from '../utils/imageUpload'
 
 function escapeRegExp(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -347,6 +348,11 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
   const handleCommentFileChange = (e) => {
     const file = e.target.files?.[0]
     if (file) {
+      if (file.size > DEFAULT_IMAGE_UPLOAD_OPTIONS.maxInputBytes) {
+        alert('Image must be under 20 MB before compression.')
+        if (commentFileRef.current) commentFileRef.current.value = ''
+        return
+      }
       setCommentImage(file)
       const reader = new FileReader()
       reader.onloadend = () => setCommentImagePreview(reader.result)
@@ -504,8 +510,11 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
     try {
       let imageUrl = commentGifUrl
       if (commentImage) {
-        const fileName = `comment-${user.id}-${Date.now()}`; const { data } = await supabase.storage.from('post-images').upload(fileName, commentImage)
-        if (data) imageUrl = supabase.storage.from('post-images').getPublicUrl(fileName).data.publicUrl
+        const { file: uploadImage, mimeType } = await compressImageForUpload(commentImage, DEFAULT_IMAGE_UPLOAD_OPTIONS)
+        const fileName = `comment-${user.id}-${Date.now()}.${getUploadExtension(uploadImage, mimeType)}`
+        const { error } = await supabase.storage.from('post-images').upload(fileName, uploadImage, { contentType: mimeType })
+        if (error) throw error
+        imageUrl = supabase.storage.from('post-images').getPublicUrl(fileName).data.publicUrl
       }
       const res = await fetch(`${API_URL}/replies`, {
         method: 'POST',
@@ -521,6 +530,10 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
         await broadcastComment({ sender_id: user.id, post_id: post.id, comment_id: serverComment.id, action: 'insert', parent_id })
       }
       if (parent_id) { setReplyingTo(null); setReplyContent('') } else { setCommentInput(''); setCommentImage(null); setCommentImagePreview(null); setCommentGifUrl(null) }
+      if (commentFileRef.current) commentFileRef.current.value = ''
+    } catch (error) {
+      console.error('Comment upload failed:', error)
+      alert(error.message || 'We couldn’t optimize that image for upload. Try a smaller image.')
     } finally {
       setCommentSending(false)
     }

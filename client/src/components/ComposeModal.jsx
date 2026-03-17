@@ -6,6 +6,7 @@ import UserMentionPicker from './UserMentionPicker'
 import RichTextEditor from './RichTextEditor'
 import { API_URL } from '../utils/apiUrl'
 import { getProfile } from '../utils/profileCache'
+import { DEFAULT_IMAGE_UPLOAD_OPTIONS, compressImageForUpload, getUploadExtension } from '../utils/imageUpload'
 
 export default function ComposeModal({ isOpen, onClose, onSuccess }) {
   const [content, setContent] = useState('')
@@ -94,8 +95,8 @@ export default function ComposeModal({ isOpen, onClose, onSuccess }) {
     const file = e.target.files[0]
     if (!file) return
 
-    if (file.size > 5 * 1024 * 1024) {
-      alert('Image must be under 5MB!')
+    if (file.size > DEFAULT_IMAGE_UPLOAD_OPTIONS.maxInputBytes) {
+      alert('Image must be under 20 MB before compression.')
       if (fileInputRef.current) fileInputRef.current.value = ''
       return
     }
@@ -200,21 +201,20 @@ export default function ComposeModal({ isOpen, onClose, onSuccess }) {
 
     let image_url = null
 
-    if (imageFile) {
-      const ext = imageFile.name.split('.').pop()
-      const fileName = `${user.id}-${Date.now()}.${ext}`
-      const { error } = await supabase.storage
-        .from('post-images')
-        .upload(fileName, imageFile)
-      if (!error) {
+    try {
+      if (imageFile) {
+        const { file: uploadImage, mimeType } = await compressImageForUpload(imageFile, DEFAULT_IMAGE_UPLOAD_OPTIONS)
+        const fileName = `${user.id}-${Date.now()}.${getUploadExtension(uploadImage, mimeType)}`
+        const { error } = await supabase.storage
+          .from('post-images')
+          .upload(fileName, uploadImage, { contentType: mimeType })
+        if (error) throw error
         const { data } = supabase.storage.from('post-images').getPublicUrl(fileName)
         image_url = data.publicUrl
+      } else if (gifUrl) {
+        image_url = gifUrl
       }
-    } else if (gifUrl) {
-      image_url = gifUrl
-    }
 
-    try {
       const res = await fetch(`${API_URL}/posts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -241,7 +241,7 @@ export default function ComposeModal({ isOpen, onClose, onSuccess }) {
       if (onSuccess) onSuccess()
     } catch (err) {
       console.error('Error creating post:', err)
-      alert(`Could not create post: ${err.message}`)
+      alert(err.message || 'We couldn’t optimize that image for upload. Try a smaller image.')
     } finally {
       setUploading(false)
     }

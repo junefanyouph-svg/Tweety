@@ -9,6 +9,7 @@ import { invalidateProfile } from '../utils/profileCache'
 import AvatarCropper from '../components/AvatarCropper'
 import PullToRefresh from '../components/PullToRefresh'
 import { API_URL } from '../utils/apiUrl'
+import { AVATAR_IMAGE_UPLOAD_OPTIONS, compressImageForUpload } from '../utils/imageUpload'
 
 export default function Profile() {
   const { username } = useParams()
@@ -131,8 +132,9 @@ export default function Profile() {
   const handleAvatarUpload = (e) => {
     const file = e.target.files[0]
     if (!file) return
-    if (file.size > 5 * 1024 * 1024) {
-      alert('Image must be under 5MB!')
+    if (file.size > AVATAR_IMAGE_UPLOAD_OPTIONS.maxInputBytes) {
+      alert('Image must be under 20 MB before compression.')
+      if (avatarInputRef.current) avatarInputRef.current.value = ''
       return
     }
     const reader = new FileReader()
@@ -143,27 +145,40 @@ export default function Profile() {
   const handleCropConfirm = async (croppedBlob) => {
     setAvatarUploading(true)
     try {
+      const croppedFile = new File([croppedBlob], `${profile.user_id}-avatar.jpg`, {
+        type: 'image/jpeg',
+        lastModified: Date.now()
+      })
+      const { file: compressedAvatar } = await compressImageForUpload(croppedFile, AVATAR_IMAGE_UPLOAD_OPTIONS)
       const fileName = `${profile.user_id}-${Date.now()}.jpg`
-      const { error } = await supabase.storage.from('avatars').upload(fileName, croppedBlob, { upsert: true })
+      const { error } = await supabase.storage.from('avatars').upload(fileName, compressedAvatar, {
+        upsert: true,
+        contentType: 'image/jpeg'
+      })
 
-      if (!error) {
-        const { data } = supabase.storage.from('avatars').getPublicUrl(fileName)
-        const avatar_url = `${data.publicUrl}?t=${Date.now()}`
-        await supabase.from('profiles').update({ avatar_url }).eq('user_id', profile.user_id)
-
-        invalidateProfile(username)
-        invalidateCache(`profile-${username}`)
-
-        const updatedProfile = { ...profile, avatar_url }
-        setProfile(updatedProfile)
-
-        setPosts(prev => prev.map(p => ({
-          ...p,
-          profiles: { ...p.profiles, avatar_url }
-        })))
-
-        window.dispatchEvent(new CustomEvent('tweety_profile_updated', { detail: { user_id: profile.user_id, avatar_url } }))
+      if (error) {
+        throw error
       }
+
+      const { data } = supabase.storage.from('avatars').getPublicUrl(fileName)
+      const avatar_url = `${data.publicUrl}?t=${Date.now()}`
+      await supabase.from('profiles').update({ avatar_url }).eq('user_id', profile.user_id)
+
+      invalidateProfile(username)
+      invalidateCache(`profile-${username}`)
+
+      const updatedProfile = { ...profile, avatar_url }
+      setProfile(updatedProfile)
+
+      setPosts(prev => prev.map(p => ({
+        ...p,
+        profiles: { ...p.profiles, avatar_url }
+      })))
+
+      window.dispatchEvent(new CustomEvent('tweety_profile_updated', { detail: { user_id: profile.user_id, avatar_url } }))
+    } catch (error) {
+      console.error('Avatar upload failed:', error)
+      alert(error.message || 'We couldn\'t optimize that image for upload. Try a smaller image.')
     } finally {
       setAvatarUploading(false)
       setCropImageSrc(null)
