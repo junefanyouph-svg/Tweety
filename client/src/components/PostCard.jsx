@@ -142,6 +142,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
   const commentFileRef = useRef(null)
   const commentInputRef = useRef(null)
   const commentBoxRef = useRef(null)
+  const carouselRef = useRef(null)
   const lastCommentCursorPos = useRef(0)
   const navigate = useNavigate()
   const fetchFnRef = useRef({ fetchLikes: null, fetchComments: null })
@@ -698,6 +699,15 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
     }
   }
 
+  const scrollCarousel = (e, direction) => {
+    e.stopPropagation()
+    if (carouselRef.current) {
+      const { scrollLeft, clientWidth } = carouselRef.current
+      const newScroll = direction === 'left' ? scrollLeft - clientWidth : scrollLeft + clientWidth
+      carouselRef.current.scrollTo({ left: newScroll, behavior: 'smooth' })
+    }
+  }
+
   const renderCommentThread = (comment, depth = 0, isLast = false) => {
     const replies = comments.filter(c => c.parent_id === comment.id);
     const hasReplies = replies.length > 0;
@@ -927,8 +937,8 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
           </div>
         )}
         {postImageUrls.length > 1 && (
-          <div className="mt-3 relative">
-            <div className="carousel-container rounded-2xl overflow-hidden bg-black/5 flex h-[350px] relative" onScroll={handleImageScroll}>
+          <div className="mt-3 relative group">
+            <div className="carousel-container rounded-2xl overflow-hidden bg-black/5 flex h-[350px] relative" onScroll={handleImageScroll} ref={carouselRef}>
               {postImageUrls.map((imageUrl, index) => (
                 <div key={index} className="carousel-slide relative h-full w-full shrink-0 flex items-center justify-center">
                   <CachedImage src={imageUrl} fallbackSrc={imageUrl} className="w-full h-full object-cover cursor-pointer" alt="" onClick={(e) => { e.stopPropagation(); setViewingImage(imageUrl) }} />
@@ -936,8 +946,27 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
               ))}
             </div>
             
+            {/* Navigation Arrows */}
+            {currentImageIndex > 0 && (
+              <button 
+                className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center cursor-pointer border-none opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                onClick={(e) => scrollCarousel(e, 'left')}
+              >
+                <span className="material-symbols-outlined filled text-sm">arrow_back_ios_new</span>
+              </button>
+            )}
+            
+            {currentImageIndex < postImageUrls.length - 1 && (
+              <button 
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center cursor-pointer border-none opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                onClick={(e) => scrollCarousel(e, 'right')}
+              >
+                <span className="material-symbols-outlined filled text-sm">arrow_forward_ios</span>
+              </button>
+            )}
+
             {/* Pagination Dots */}
-            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-10 bg-black/40 px-3 py-1.5 rounded-full" onClick={e => e.stopPropagation()}>
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-10 bg-black/40 px-3 py-1.5 rounded-full pointer-events-none">
               {postImageUrls.map((_, index) => (
                 <div 
                   key={index} 
