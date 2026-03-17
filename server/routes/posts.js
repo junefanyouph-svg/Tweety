@@ -1,6 +1,7 @@
 const express = require('express')
 const router = express.Router()
 const supabase = require('../supabase')
+const { enqueueMediaForDeletion } = require('../utils/mediaCleanup')
 
 // SEARCH posts - must be ABOVE /:id
 router.get('/search/:query', async (req, res) => {
@@ -188,12 +189,45 @@ router.patch('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   const { id } = req.params
 
+  const { data: post, error: postFetchError } = await supabase
+    .from('posts')
+    .select('id, image_url')
+    .eq('id', id)
+    .single()
+
+  if (postFetchError) return res.status(500).json({ error: postFetchError.message })
+
+  const { data: comments, error: commentsFetchError } = await supabase
+    .from('comments')
+    .select('id, image_url')
+    .eq('post_id', id)
+
+  if (commentsFetchError) return res.status(500).json({ error: commentsFetchError.message })
+
+  const mediaToQueue = [
+    post?.image_url ? { mediaUrl: post.image_url, sourceType: 'post', sourceId: post.id } : null,
+    ...(comments || [])
+      .filter(comment => comment.image_url)
+      .map(comment => ({
+        mediaUrl: comment.image_url,
+        sourceType: 'comment',
+        sourceId: comment.id
+      }))
+  ].filter(Boolean)
+
   const { error } = await supabase
     .from('posts')
     .delete()
     .eq('id', id)
 
   if (error) return res.status(500).json({ error: error.message })
+  if (mediaToQueue.length) {
+    try {
+      await enqueueMediaForDeletion(mediaToQueue)
+    } catch (queueError) {
+      console.error('Failed to queue post media cleanup:', queueError)
+    }
+  }
   res.json({ message: 'Post deleted' })
 })
 

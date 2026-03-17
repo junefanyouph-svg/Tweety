@@ -16,6 +16,7 @@ const followersRouter = require('./routes/followers')
 const notificationsRouter = require('./routes/notifications')
 const settingsRouter = require('./routes/settings')
 const commentLikesRouter = require('./routes/comment_likes')
+const internalRouter = require('./routes/internal')
 
 const apiRouter = express.Router()
 apiRouter.use('/posts', postsRouter)
@@ -26,6 +27,7 @@ apiRouter.use('/followers', followersRouter)
 apiRouter.use('/notifications', notificationsRouter)
 apiRouter.use('/settings', settingsRouter)
 apiRouter.use('/comment_likes', commentLikesRouter)
+apiRouter.use('/internal', internalRouter)
 apiRouter.get('/health', async (req, res) => {
   try {
     const { data, error } = await supabase.from('profiles').select('count', { count: 'exact', head: true })

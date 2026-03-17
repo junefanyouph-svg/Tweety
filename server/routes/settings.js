@@ -1,6 +1,7 @@
 const express = require('express')
 const router = express.Router()
 const supabase = require('../supabase')
+const { enqueueMediaForDeletion } = require('../utils/mediaCleanup')
 
 // UPDATE username (only if not taken)
 router.patch('/username', async (req, res) => {
@@ -85,6 +86,28 @@ router.patch('/password', async (req, res) => {
 router.delete('/account', async (req, res) => {
   const { user_id } = req.body
 
+  const [{ data: userPosts }, { data: userComments }] = await Promise.all([
+    supabase.from('posts').select('id, image_url').eq('user_id', user_id),
+    supabase.from('comments').select('id, image_url').eq('user_id', user_id)
+  ])
+
+  const postIds = (userPosts || []).map(post => post.id)
+  const { data: commentsOnUserPosts } = postIds.length
+    ? await supabase.from('comments').select('id, image_url').in('post_id', postIds)
+    : { data: [] }
+
+  const mediaToQueue = [
+    ...(userPosts || [])
+      .filter(post => post.image_url)
+      .map(post => ({ mediaUrl: post.image_url, sourceType: 'post', sourceId: post.id })),
+    ...(userComments || [])
+      .filter(comment => comment.image_url)
+      .map(comment => ({ mediaUrl: comment.image_url, sourceType: 'comment', sourceId: comment.id })),
+    ...(commentsOnUserPosts || [])
+      .filter(comment => comment.image_url)
+      .map(comment => ({ mediaUrl: comment.image_url, sourceType: 'comment', sourceId: comment.id }))
+  ]
+
   await supabase.from('posts').delete().eq('user_id', user_id)
   await supabase.from('comments').delete().eq('user_id', user_id)
   await supabase.from('likes').delete().eq('user_id', user_id)
@@ -96,6 +119,14 @@ router.delete('/account', async (req, res) => {
 
   const { error } = await supabase.auth.admin.deleteUser(user_id)
   if (error) return res.status(500).json({ error: error.message })
+
+  if (mediaToQueue.length) {
+    try {
+      await enqueueMediaForDeletion(mediaToQueue)
+    } catch (queueError) {
+      console.error('Failed to queue account media cleanup:', queueError)
+    }
+  }
 
   res.json({ message: 'Account deleted' })
 })

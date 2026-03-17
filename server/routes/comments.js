@@ -1,6 +1,7 @@
 const express = require('express')
 const router = express.Router()
 const supabase = require('../supabase')
+const { enqueueMediaForDeletion } = require('../utils/mediaCleanup')
 
 // GET comments for a post
 router.get('/:post_id', async (req, res) => {
@@ -141,12 +142,31 @@ router.patch('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   const { id } = req.params
 
+  const { data: comment, error: commentFetchError } = await supabase
+    .from('comments')
+    .select('id, image_url')
+    .eq('id', id)
+    .single()
+
+  if (commentFetchError) return res.status(500).json({ error: commentFetchError.message })
+
   const { error } = await supabase
     .from('comments')
     .delete()
     .eq('id', id)
 
   if (error) return res.status(500).json({ error: error.message })
+  if (comment?.image_url) {
+    try {
+      await enqueueMediaForDeletion([{
+        mediaUrl: comment.image_url,
+        sourceType: 'comment',
+        sourceId: comment.id
+      }])
+    } catch (queueError) {
+      console.error('Failed to queue comment media cleanup:', queueError)
+    }
+  }
   res.json({ message: 'Comment deleted' })
 })
 

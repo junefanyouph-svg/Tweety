@@ -35,3 +35,9 @@ Jargon is a Progressive Web App. To enjoy the full-screen experience:
 3. **Execution**:
    - Client: `cd client && npm run dev`
    - Server: `cd server && node index.js`
+
+## Media Cleanup Retention
+
+- Deleted post/comment media is now queued for storage deletion after 30 days.
+- Apply `server/sql/media_cleanup_queue.sql` in Supabase before relying on this feature.
+- Set `CRON_SECRET` in Vercel and the same environment variable on the server so the daily `/api/internal/media-cleanup` cron can run securely.
