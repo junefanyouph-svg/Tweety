@@ -16,7 +16,7 @@ export default function Feed() {
   const headerOffset = useRef(0)
   const headerRef = useRef(null)
   const navigate = useNavigate()
-  const isScrolled = useRef(window.scrollY > 400)
+  const isHistoryPushed = useRef(false)
 
   useEffect(() => {
     const handleScroll = () => {
@@ -26,42 +26,31 @@ export default function Feed() {
       const delta = currentScrollY - lastScrollY.current
       lastScrollY.current = currentScrollY
 
-      // Accumulate offset: positive delta (scroll down) pushes header up, negative (scroll up) reveals it
       headerOffset.current = Math.min(0, Math.max(-HEADER_HEIGHT, headerOffset.current - delta))
-
-      // At the very top of the page, always fully show
       if (currentScrollY <= 0) headerOffset.current = 0
-
       headerRef.current.style.transform = `translateY(${headerOffset.current}px)`
 
-      // Handle "Back to top" history logic
-      if (currentScrollY > 400 && !isScrolled.current) {
-        isScrolled.current = true
-        if (window.location.hash !== '#scrolled') {
-          window.history.pushState(null, '', window.location.pathname + window.location.search + '#scrolled')
+      // Mobile "Back to top" logic: push history state when scrolled down
+      const threshold = 600
+      if (currentScrollY > threshold && !isHistoryPushed.current) {
+        window.history.pushState({ backToTop: true }, '')
+        isHistoryPushed.current = true
+      } else if (currentScrollY < 200 && isHistoryPushed.current) {
+        // If they manually scroll back up, pop the state if it's ours
+        if (window.history.state?.backToTop) {
+          window.history.back()
         }
-      } else if (currentScrollY <= 100 && isScrolled.current) {
-        isScrolled.current = false
-        if (window.location.hash === '#scrolled') {
-          window.history.replaceState(null, '', window.location.pathname + window.location.search)
-        }
+        isHistoryPushed.current = false
       }
     }
 
-    const handlePopState = () => {
-      if (isScrolled.current && window.location.hash !== '#scrolled') {
+    const handlePopState = (e) => {
+      // Catch the back button and scroll to top if we were the ones who pushed state
+      if (isHistoryPushed.current) {
         window.scrollTo({ top: 0, behavior: 'smooth' })
-        isScrolled.current = false
+        isHistoryPushed.current = false
       }
     }
-
-    // Cleanup initial stray hash if scroll restoration leaves us near top
-    setTimeout(() => {
-      if (window.scrollY <= 100 && window.location.hash === '#scrolled') {
-        window.history.replaceState(null, '', window.location.pathname + window.location.search)
-        isScrolled.current = false
-      }
-    }, 100)
 
     window.addEventListener('scroll', handleScroll, { passive: true })
     window.addEventListener('popstate', handlePopState)

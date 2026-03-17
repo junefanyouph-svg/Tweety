@@ -128,15 +128,27 @@ function ExpandedImageViewer({ initialImage, images, onClose }) {
     onCloseRef.current = onClose
   }, [onClose])
 
-  useEffect(() => {
-    window.history.pushState({ imageViewerOpen: true }, '')
+  const isHistoryPushed = useRef(false)
 
-    const handlePopState = () => {
+  useEffect(() => {
+    // Push a custom state so we can intercept the BACK button
+    window.history.pushState({ imageViewerOpen: true }, '')
+    isHistoryPushed.current = true
+
+    const handlePopState = (e) => {
+      // If we see our state has been popped (standard BACK button press)
       onCloseRef.current(true)
+      isHistoryPushed.current = false
     }
 
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape') onCloseRef.current(false)
+      if (e.key === 'Escape') {
+        onCloseRef.current(false)
+        if (isHistoryPushed.current) {
+          window.history.back()
+          isHistoryPushed.current = false
+        }
+      }
     }
 
     window.addEventListener('popstate', handlePopState)
@@ -145,15 +157,22 @@ function ExpandedImageViewer({ initialImage, images, onClose }) {
     return () => {
       window.removeEventListener('popstate', handlePopState)
       window.removeEventListener('keydown', handleKeyDown)
+      // Cleanup: if component is unmounted by parent (not BACK button), pop the history state
+      if (isHistoryPushed.current) {
+        window.history.back()
+        isHistoryPushed.current = false
+      }
     }
   }, [])
 
+
   return createPortal(
-    <div className="fixed inset-0 bg-black/85 z-[99999] flex items-center justify-center backdrop-blur-md" onClick={() => onClose(false)}>
-      <div className="relative animate-[popIn_0.3s_ease-out] flex flex-col items-center group w-full h-full justify-center" onClick={(e) => e.stopPropagation()}>
-        <button className="absolute top-4 right-4 md:top-8 md:right-8 text-white cursor-pointer bg-black/50 hover:bg-black/80 rounded-full w-10 h-10 flex items-center justify-center border-none text-xl hover:text-primary transition-colors z-[100000]" onClick={() => onClose(false)}>
-          <span className="material-symbols-outlined filled">close</span>
-        </button>
+    <div className="fixed inset-0 bg-black/90 z-[99999] flex items-center justify-center backdrop-blur-md" onClick={() => onClose(false)}>
+      <button className="absolute top-4 right-4 md:top-8 md:right-8 text-white cursor-pointer bg-black/50 hover:bg-black/80 rounded-full w-10 h-10 flex items-center justify-center border-none text-xl hover:text-primary transition-colors z-[100001]" onClick={(e) => { e.stopPropagation(); onClose(false); }}>
+        <span className="material-symbols-outlined filled">close</span>
+      </button>
+
+      <div className="relative animate-[popIn_0.3s_ease-out] flex flex-col items-center group w-full h-full justify-center">
 
         {isMultiple ? (
           <>
@@ -194,7 +213,7 @@ function ExpandedImageViewer({ initialImage, images, onClose }) {
                   className={`shrink-0 w-14 h-14 md:w-16 md:h-16 rounded-md overflow-hidden cursor-pointer transition-all duration-300 border-2 ${idx === currentIndex ? 'border-primary opacity-100 scale-110' : 'border-transparent opacity-50 hover:opacity-100'}`}
                   onClick={(e) => { e.stopPropagation(); scrollTo(idx) }}
                 >
-                  <CachedImage src={img} fallbackSrc={img} className="w-full h-full object-cover bg-black" alt="" />
+                  <CachedImage src={img} fallbackSrc={img} className="w-full h-full object-cover bg-black" alt="" onClick={(e) => e.stopPropagation()} />
                 </div>
               ))}
             </div>
