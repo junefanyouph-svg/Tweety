@@ -912,44 +912,44 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
         </div>
         <div className="text-base leading-relaxed text-text-main mb-1">{renderContent(post.content, navigate, highlightQuery)}{post.edited && <span className="text-text-dim text-[0.72rem] ml-1.5 italic">(edited)</span>}</div>
         {postImageUrls.length === 1 && (
-          <div className="mt-3 overflow-hidden max-h-[500px] flex justify-center bg-black/5">
-            <CachedImage src={postImageUrls[0]} fallbackSrc={postImageUrls[0]} className="max-w-full max-h-[500px] w-auto h-auto object-contain cursor-pointer" alt="" onClick={(e) => { e.stopPropagation(); setViewingImage(postImageUrls[0]) }} />
+          <div className="mt-3 overflow-hidden rounded-2xl max-h-[440px] flex justify-center bg-black/5">
+            <CachedImage src={postImageUrls[0]} fallbackSrc={postImageUrls[0]} className="max-w-full max-h-[440px] w-auto h-auto object-contain cursor-pointer" alt="" onClick={(e) => { e.stopPropagation(); setViewingImage(postImageUrls[0]) }} />
           </div>
         )}
         {postImageUrls.length === 2 && (
           <div className="mt-3 grid grid-cols-2 gap-2 overflow-hidden rounded-2xl">
             {postImageUrls.map((imageUrl, index) => (
-              <div key={imageUrl} className="overflow-hidden bg-black/5 h-[260px]">
-                <CachedImage src={imageUrl} fallbackSrc={imageUrl} className="w-full h-full object-cover cursor-pointer" alt="" onClick={(e) => { e.stopPropagation(); openPostMediaGallery(index) }} />
+              <div key={imageUrl} className="overflow-hidden bg-black/5 h-[240px] flex items-center justify-center">
+                <CachedImage src={imageUrl} fallbackSrc={imageUrl} className="max-w-full max-h-full object-contain cursor-pointer" alt="" onClick={(e) => { e.stopPropagation(); openPostMediaGallery(index) }} />
               </div>
             ))}
           </div>
         )}
         {postImageUrls.length === 3 && (
-          <div className="mt-3 grid grid-cols-[1.15fr_0.85fr] gap-2 h-[360px] overflow-hidden rounded-2xl">
-            <div className="overflow-hidden bg-black/5 h-full">
-              <CachedImage src={postImageUrls[0]} fallbackSrc={postImageUrls[0]} className="w-full h-full object-cover cursor-pointer" alt="" onClick={(e) => { e.stopPropagation(); openPostMediaGallery(0) }} />
+          <div className="mt-3 grid grid-cols-[1.15fr_0.85fr] gap-2 h-[320px] overflow-hidden rounded-2xl">
+            <div className="overflow-hidden bg-black/5 h-full flex items-center justify-center">
+              <CachedImage src={postImageUrls[0]} fallbackSrc={postImageUrls[0]} className="max-w-full max-h-full object-contain cursor-pointer" alt="" onClick={(e) => { e.stopPropagation(); openPostMediaGallery(0) }} />
             </div>
             <div className="grid grid-rows-2 gap-2 h-full">
               {postImageUrls.slice(1).map((imageUrl, index) => (
-                <div key={imageUrl} className="overflow-hidden bg-black/5 h-full">
-                  <CachedImage src={imageUrl} fallbackSrc={imageUrl} className="w-full h-full object-cover cursor-pointer" alt="" onClick={(e) => { e.stopPropagation(); openPostMediaGallery(index + 1) }} />
+                <div key={imageUrl} className="overflow-hidden bg-black/5 h-full flex items-center justify-center">
+                  <CachedImage src={imageUrl} fallbackSrc={imageUrl} className="max-w-full max-h-full object-contain cursor-pointer" alt="" onClick={(e) => { e.stopPropagation(); openPostMediaGallery(index + 1) }} />
                 </div>
               ))}
             </div>
           </div>
         )}
         {postImageUrls.length >= 4 && (
-          <div className="mt-3 grid grid-cols-[1.15fr_0.85fr] gap-2 h-[360px] overflow-hidden rounded-2xl">
-            <div className="overflow-hidden bg-black/5 h-full">
-              <CachedImage src={postImageUrls[0]} fallbackSrc={postImageUrls[0]} className="w-full h-full object-cover cursor-pointer" alt="" onClick={(e) => { e.stopPropagation(); openPostMediaGallery(0) }} />
+          <div className="mt-3 grid grid-cols-[1.15fr_0.85fr] gap-2 h-[320px] overflow-hidden rounded-2xl">
+            <div className="overflow-hidden bg-black/5 h-full flex items-center justify-center">
+              <CachedImage src={postImageUrls[0]} fallbackSrc={postImageUrls[0]} className="max-w-full max-h-full object-contain cursor-pointer" alt="" onClick={(e) => { e.stopPropagation(); openPostMediaGallery(0) }} />
             </div>
             <div className="grid grid-rows-2 gap-2 h-full">
-              <div className="overflow-hidden bg-black/5 h-full">
-                <CachedImage src={postImageUrls[1]} fallbackSrc={postImageUrls[1]} className="w-full h-full object-cover cursor-pointer" alt="" onClick={(e) => { e.stopPropagation(); openPostMediaGallery(1) }} />
+              <div className="overflow-hidden bg-black/5 h-full flex items-center justify-center">
+                <CachedImage src={postImageUrls[1]} fallbackSrc={postImageUrls[1]} className="max-w-full max-h-full object-contain cursor-pointer" alt="" onClick={(e) => { e.stopPropagation(); openPostMediaGallery(1) }} />
               </div>
-              <button className="relative overflow-hidden bg-black/40 h-full border-none p-0 cursor-pointer" onClick={(e) => { e.stopPropagation(); openPostMediaGallery(2) }}>
-                <CachedImage src={postImageUrls[2]} fallbackSrc={postImageUrls[2]} className="w-full h-full object-cover blur-[2px] scale-105" alt="" />
+              <button className="relative overflow-hidden bg-black/40 h-full border-none p-0 cursor-pointer flex items-center justify-center" onClick={(e) => { e.stopPropagation(); openPostMediaGallery(2) }}>
+                <CachedImage src={postImageUrls[2]} fallbackSrc={postImageUrls[2]} className="max-w-full max-h-full object-contain blur-[2px] scale-105" alt="" />
                 <div className="absolute inset-0 bg-black/35 flex items-center justify-center text-white text-[2rem] font-bold">
                   +{postImageUrls.length - 2}
                 </div>
