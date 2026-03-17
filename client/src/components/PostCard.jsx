@@ -167,14 +167,23 @@ function ExpandedImageViewer({ initialImage, images, onClose }) {
 
 
   return createPortal(
-    <div className="fixed inset-0 bg-black/90 z-[99999] flex items-center justify-center backdrop-blur-md" onClick={() => onClose(false)}>
-      <button className="absolute top-4 right-4 md:top-8 md:right-8 text-white cursor-pointer bg-black/50 hover:bg-black/80 rounded-full w-10 h-10 flex items-center justify-center border-none text-xl hover:text-primary transition-colors z-[100001]" onClick={(e) => { e.stopPropagation(); onClose(false); }}>
+    <div 
+      className="fixed inset-0 bg-black/90 z-[99999] flex items-center justify-center backdrop-blur-md" 
+      onClick={() => onClose(false)}
+    >
+
+
+      <button 
+        className="absolute top-4 right-4 md:top-8 md:right-8 text-white cursor-pointer bg-black/50 hover:bg-black/80 rounded-full w-10 h-10 flex items-center justify-center border-none text-xl hover:text-primary transition-colors z-[100001]" 
+        onClick={(e) => { e.stopPropagation(); onClose(false); }}
+      >
         <span className="material-symbols-outlined filled">close</span>
       </button>
 
       <div className="relative animate-[popIn_0.3s_ease-out] flex flex-col items-center group w-full h-full justify-center">
+        <div className="w-full h-full flex flex-col items-center justify-center" onClick={() => onClose(false)}>
 
-        {isMultiple ? (
+          {isMultiple ? (
           <>
             <div 
               className="carousel-container w-full h-full flex items-center" 
@@ -182,10 +191,11 @@ function ExpandedImageViewer({ initialImage, images, onClose }) {
               onScroll={handleScroll}
             >
               {images.map((img, idx) => (
-                <div key={idx} className="carousel-slide relative h-full w-full shrink-0 flex items-center justify-center p-4 md:p-12 pb-[100px]">
+                <div key={idx} className="carousel-slide relative h-full w-full shrink-0 flex items-center justify-center p-4 md:p-12 pb-[100px]" onClick={() => onClose(false)}>
                   <CachedImage src={img} fallbackSrc={img} className="max-w-full max-h-full rounded-lg shadow-2xl object-contain cursor-default" alt="" onClick={(e) => e.stopPropagation()} />
                 </div>
               ))}
+
             </div>
 
             {currentIndex > 0 && (
@@ -219,14 +229,16 @@ function ExpandedImageViewer({ initialImage, images, onClose }) {
             </div>
           </>
         ) : (
-          <div className="flex items-center justify-center p-4 w-full h-full">
+          <div className="flex items-center justify-center p-4 w-full h-full" onClick={() => onClose(false)}>
              <CachedImage src={initialImage} fallbackSrc={initialImage} className="max-w-[100vw] lg:max-w-[90vw] max-h-[85vh] rounded-lg shadow-2xl object-contain cursor-default" alt="" onClick={(e) => e.stopPropagation()} />
           </div>
         )}
+
       </div>
-    </div>,
-    document.body
-  )
+    </div>
+  </div>,
+  document.body
+)
 }
 
 export default function PostCard({ post, user, onDelete, onNavigate, defaultOpenComments = false, highlightQuery = '' }) {

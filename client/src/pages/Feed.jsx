@@ -30,13 +30,13 @@ export default function Feed() {
       if (currentScrollY <= 0) headerOffset.current = 0
       headerRef.current.style.transform = `translateY(${headerOffset.current}px)`
 
-      // Mobile "Back to top" logic: push history state when scrolled down
+      // Mobile "Back to top" logic: push history state when scrolled down enough
       const threshold = 600
       if (currentScrollY > threshold && !isHistoryPushed.current) {
         window.history.pushState({ backToTop: true }, '')
         isHistoryPushed.current = true
-      } else if (currentScrollY < 200 && isHistoryPushed.current) {
-        // If they manually scroll back up, pop the state if it's ours
+      } else if (currentScrollY < 100 && isHistoryPushed.current) {
+        // If they scroll back to the very top manually, remove our temporary state
         if (window.history.state?.backToTop) {
           window.history.back()
         }
@@ -45,11 +45,17 @@ export default function Feed() {
     }
 
     const handlePopState = (e) => {
-      // Catch the back button and scroll to top if we were the ones who pushed state
-      if (isHistoryPushed.current) {
+      // Only scroll to top if we had a state pushed and the current state no longer has it
+      if (isHistoryPushed.current && !window.history.state?.backToTop) {
         window.scrollTo({ top: 0, behavior: 'smooth' })
         isHistoryPushed.current = false
       }
+    }
+
+    // Check if we're already scrolled down on load (e.g. refresh)
+    if (window.scrollY > 600 && !isHistoryPushed.current) {
+      window.history.pushState({ backToTop: true }, '')
+      isHistoryPushed.current = true
     }
 
     window.addEventListener('scroll', handleScroll, { passive: true })
@@ -57,6 +63,10 @@ export default function Feed() {
     return () => {
       window.removeEventListener('scroll', handleScroll)
       window.removeEventListener('popstate', handlePopState)
+      // Cleanup: if we navigate away from Feed, pop the state if it's ours
+      if (isHistoryPushed.current && window.history.state?.backToTop) {
+        window.history.back()
+      }
     }
   }, [])
 
