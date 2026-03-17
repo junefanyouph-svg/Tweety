@@ -197,11 +197,29 @@ router.patch('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   const { id } = req.params
 
-  const { data: post, error: postFetchError } = await supabase
+  // Try fetching the post with image_urls first; fall back if the column doesn't exist yet
+  let post = null
+  let postFetchError = null
+
+  const fullFetch = await supabase
     .from('posts')
     .select('id, image_url, image_urls')
     .eq('id', id)
     .single()
+
+  if (fullFetch.error && fullFetch.error.message?.includes('image_urls')) {
+    // image_urls column doesn't exist yet — retry without it
+    const fallback = await supabase
+      .from('posts')
+      .select('id, image_url')
+      .eq('id', id)
+      .single()
+    post = fallback.data
+    postFetchError = fallback.error
+  } else {
+    post = fullFetch.data
+    postFetchError = fullFetch.error
+  }
 
   if (postFetchError) return res.status(500).json({ error: postFetchError.message })
 

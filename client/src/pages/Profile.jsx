@@ -245,7 +245,11 @@ export default function Profile() {
   }
 
   const handleDelete = async (id) => {
-    await fetch(`${API_URL}/posts/${id}`, { method: 'DELETE' })
+    const res = await fetch(`${API_URL}/posts/${id}`, { method: 'DELETE' })
+    if (!res.ok) {
+      console.error('Delete failed:', await res.text())
+      return
+    }
     setPosts(prev => prev.filter(p => p.id !== id))
     setStats(prev => ({ ...prev, posts: prev.posts - 1 }))
   }

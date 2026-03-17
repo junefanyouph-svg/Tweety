@@ -39,7 +39,11 @@ export default function PostPage() {
   }
 
   const handleDelete = async (postId) => {
-    await fetch(`${API_URL}/posts/${postId}`, { method: 'DELETE' })
+    const res = await fetch(`${API_URL}/posts/${postId}`, { method: 'DELETE' })
+    if (!res.ok) {
+      console.error('Delete failed:', await res.text())
+      return
+    }
     navigate(from)
   }
 

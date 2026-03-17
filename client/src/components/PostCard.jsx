@@ -961,7 +961,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
 
       <div className="flex gap-2 mt-4 items-center border-t border-border-dark pt-3" onClick={(e) => { e.stopPropagation(); toggleComments(); }}>
         <button className={`bg-none border-none cursor-pointer text-[0.9rem] py-1.5 px-3 rounded-lg flex items-center gap-1.5 hover:bg-primary-dim transition-colors ${likes.some(l => l.user_id === user?.id) ? 'text-[#e0245e]' : 'text-text-dim'} ${heartAnim ? 'heart-bounce' : ''}`} onClick={(e) => { e.stopPropagation(); handleLike(); }}><span className={`material-symbols-outlined text-[1.1rem] ${likes.some(l => l.user_id === user?.id) ? 'filled' : ''}`}>favorite</span> <span>{likes.length}</span></button>
-        <button className={`bg-none border-none cursor-pointer text-[0.9rem] py-1.5 px-3 rounded-lg flex items-center gap-1.5 hover:bg-primary-dim transition-colors ${showComments ? 'text-primary' : 'text-text-dim'}`} onClick={(e) => { e.stopPropagation(); toggleComments(); }}><span className="material-symbols-outlined filled">reply</span> <span>{comments.length}</span></button>
+        <button className={`bg-none border-none cursor-pointer text-[0.9rem] py-1.5 px-3 rounded-lg flex items-center gap-1.5 hover:bg-primary-dim transition-colors ${showComments ? 'text-primary' : 'text-text-dim'}`} onClick={(e) => { e.stopPropagation(); toggleComments(); }}><span className="material-symbols-outlined">mode_comment</span> <span>{comments.length}</span></button>
       </div>
       {(showComments || closingComments) && (
         <div className={`mt-4 ${closingComments ? 'comments-slide-up' : 'comments-slide'}`} onClick={e => e.stopPropagation()}>
