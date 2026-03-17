@@ -5,7 +5,7 @@ import { supabase } from '../supabase'
 import PostCard from '../components/PostCard'
 import { PostSkeleton, ProfileSkeleton } from '../components/Skeleton'
 import { setCache, getCache, invalidateCache } from '../utils/cache'
-import { invalidateProfile } from '../utils/profileCache'
+import { invalidateProfile, setCachedProfile } from '../utils/profileCache'
 import AvatarCropper from '../components/AvatarCropper'
 import PullToRefresh from '../components/PullToRefresh'
 import { API_URL } from '../utils/apiUrl'
@@ -168,6 +168,7 @@ export default function Profile() {
       invalidateCache(`profile-${username}`)
 
       const updatedProfile = { ...profile, avatar_url }
+      setCachedProfile(username, updatedProfile)
       setProfile(updatedProfile)
 
       setPosts(prev => prev.map(p => ({

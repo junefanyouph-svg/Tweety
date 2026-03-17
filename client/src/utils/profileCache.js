@@ -9,6 +9,22 @@ const getStore = () => {
   }
 }
 
+const saveStore = (store) => {
+  localStorage.setItem(STORE_KEY, JSON.stringify(store))
+}
+
+export const getCachedProfile = (username) => {
+  const store = getStore()
+  return store[username] || null
+}
+
+export const setCachedProfile = (username, profile) => {
+  if (!username || !profile) return
+  const store = getStore()
+  store[username] = { ...store[username], ...profile, _ts: Date.now() }
+  saveStore(store)
+}
+
 export const getProfile = async (username, apiUrl) => {
   const store = getStore()
   const cached = store[username]
@@ -23,7 +39,7 @@ export const getProfile = async (username, apiUrl) => {
     const data = await res.json()
     if (data && !data.error) {
       store[username] = { ...data, _ts: Date.now() }
-      localStorage.setItem(STORE_KEY, JSON.stringify(store))
+      saveStore(store)
     }
     return data
   } catch {
@@ -35,5 +51,5 @@ export const getProfile = async (username, apiUrl) => {
 export const invalidateProfile = (username) => {
   const store = getStore()
   delete store[username]
-  localStorage.setItem(STORE_KEY, JSON.stringify(store))
-}
+  saveStore(store)
+}

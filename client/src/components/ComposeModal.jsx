@@ -6,6 +6,7 @@ import UserMentionPicker from './UserMentionPicker'
 import RichTextEditor from './RichTextEditor'
 import { API_URL } from '../utils/apiUrl'
 import { DEFAULT_IMAGE_UPLOAD_OPTIONS, compressImageForUpload, getUploadExtension } from '../utils/imageUpload'
+import { getCachedProfile, setCachedProfile } from '../utils/profileCache'
 
 export default function ComposeModal({ isOpen, onClose, onSuccess }) {
   const [content, setContent] = useState('')
@@ -41,6 +42,9 @@ export default function ComposeModal({ isOpen, onClose, onSuccess }) {
 
     if (!error && data) {
       setUserProfile(data)
+      if (data.username) {
+        setCachedProfile(data.username, data)
+      }
     }
   }
 
@@ -78,6 +82,13 @@ export default function ComposeModal({ isOpen, onClose, onSuccess }) {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         setUser(user)
+        const username = user.user_metadata?.username
+        if (username) {
+          const cachedProfile = getCachedProfile(username)
+          if (cachedProfile) {
+            setUserProfile(cachedProfile)
+          }
+        }
         await fetchCurrentUserProfile(user)
       }
     }
@@ -113,10 +124,16 @@ export default function ComposeModal({ isOpen, onClose, onSuccess }) {
       const detail = e.detail
       if (!detail || detail.user_id !== user?.id) return
 
-      setUserProfile(prev => ({
-        ...(prev || {}),
-        ...detail
-      }))
+      setUserProfile(prev => {
+        const nextProfile = {
+          ...(prev || {}),
+          ...detail
+        }
+        if (nextProfile.username) {
+          setCachedProfile(nextProfile.username, nextProfile)
+        }
+        return nextProfile
+      })
     }
 
     window.addEventListener('tweety_profile_updated', handleProfileUpdated)
