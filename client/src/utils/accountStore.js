@@ -40,3 +40,12 @@ export const updateAccountTokens = (user_id, access_token, refresh_token) => {
         localStorage.setItem(STORE_KEY, JSON.stringify(accounts))
     }
 }
+
+export const updateAccountProfile = (user_id, profile) => {
+    const accounts = getAccounts()
+    const idx = accounts.findIndex(a => a.user_id === user_id)
+    if (idx >= 0) {
+        accounts[idx] = { ...accounts[idx], ...profile }
+        localStorage.setItem(STORE_KEY, JSON.stringify(accounts))
+    }
+}

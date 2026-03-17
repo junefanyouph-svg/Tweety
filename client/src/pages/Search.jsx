@@ -5,6 +5,7 @@ import { styles } from '../styles/Search.styles'
 import { PostSkeleton, UserCardSkeleton } from '../components/Skeleton'
 import PostCard from '../components/PostCard'
 import { API_URL } from '../utils/apiUrl'
+import { mergeCachedProfiles, setCachedProfile } from '../utils/profileCache'
 
 function escapeRegExp(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -81,11 +82,35 @@ export default function Search() {
   
     const postsData = await postsRes.json()
     const usersData = await usersRes.json()
+    const mergedUsers = mergeCachedProfiles(usersData || [])
+    mergedUsers.forEach(profile => {
+      if (profile?.username) {
+        setCachedProfile(profile.username, profile)
+      }
+    })
   
     setPosts(postsData)
-    setUsers(usersData)
+    setUsers(mergedUsers)
     setLoading(false)
   }
+
+  useEffect(() => {
+    const handleProfileUpdated = (e) => {
+      const detail = e.detail
+      if (!detail?.user_id) return
+      setUsers(prev => prev.map(profile => {
+        if (profile.user_id !== detail.user_id) return profile
+        const nextProfile = { ...profile, ...detail }
+        if (nextProfile.username) {
+          setCachedProfile(nextProfile.username, nextProfile)
+        }
+        return nextProfile
+      }))
+    }
+
+    window.addEventListener('tweety_profile_updated', handleProfileUpdated)
+    return () => window.removeEventListener('tweety_profile_updated', handleProfileUpdated)
+  }, [])
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') {

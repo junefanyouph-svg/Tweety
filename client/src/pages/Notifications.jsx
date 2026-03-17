@@ -4,6 +4,7 @@ import { supabase } from '../supabase'
 import { styles } from '../styles/Notifications.styles'
 import PullToRefresh from '../components/PullToRefresh'
 import { API_URL } from '../utils/apiUrl'
+import { mergeCachedProfiles, setCachedProfile } from '../utils/profileCache'
 
 export default function Notifications() {
   const [notifications, setNotifications] = useState([])
@@ -36,6 +37,27 @@ export default function Notifications() {
     }
   }, [])
 
+  useEffect(() => {
+    const handleProfileUpdated = (e) => {
+      const detail = e.detail
+      if (!detail?.user_id) return
+      setNotifications(prev => prev.map(notification => {
+        if (notification.sender_id !== detail.user_id) return notification
+        const nextProfile = { ...(notification.sender_profile || {}), ...detail }
+        if (nextProfile.username) {
+          setCachedProfile(nextProfile.username, nextProfile)
+        }
+        return {
+          ...notification,
+          sender_profile: nextProfile
+        }
+      }))
+    }
+
+    window.addEventListener('tweety_profile_updated', handleProfileUpdated)
+    return () => window.removeEventListener('tweety_profile_updated', handleProfileUpdated)
+  }, [])
+
   const fetchNotifications = async (user_id) => {
     const { data } = await supabase
       .from('notifications')
@@ -54,9 +76,13 @@ export default function Notifications() {
           .select('user_id, avatar_url, display_name, username')
           .in('user_id', senderIds)
 
+        const mergedProfiles = mergeCachedProfiles(profiles || [])
         const profileMap = new Map()
-          ; (profiles || []).forEach(p => {
+          ; mergedProfiles.forEach(p => {
             profileMap.set(p.user_id, p)
+            if (p.username) {
+              setCachedProfile(p.username, p)
+            }
           })
 
         enriched = enriched.map(n => ({

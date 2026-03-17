@@ -4,6 +4,7 @@ import { supabase } from '../supabase'
 import { styles } from '../styles/Messages.styles'
 import NewMessageModal from '../components/NewMessageModal'
 import { API_URL } from '../utils/apiUrl'
+import { mergeCachedProfile, setCachedProfile } from '../utils/profileCache'
 
 export default function DirectMessages() {
     const [conversations, setConversations] = useState([])
@@ -15,6 +16,19 @@ export default function DirectMessages() {
     useEffect(() => {
         let channel;
         let isMounted = true;
+        const handleProfileUpdated = (e) => {
+            const detail = e.detail
+            if (!detail?.user_id) return
+            setConversations(prev => prev.map(conv => {
+                if (conv.id !== detail.user_id) return conv
+                const nextConv = { ...conv, ...detail, display_name: detail.display_name || conv.display_name }
+                if (nextConv.username) {
+                    setCachedProfile(nextConv.username, nextConv)
+                }
+                return nextConv
+            }))
+        }
+        window.addEventListener('tweety_profile_updated', handleProfileUpdated)
 
         const init = async () => {
             const { data: { user } } = await supabase.auth.getUser()
@@ -61,6 +75,7 @@ export default function DirectMessages() {
         return () => {
             isMounted = false;
             if (channel) supabase.removeChannel(channel);
+            window.removeEventListener('tweety_profile_updated', handleProfileUpdated)
         }
     }, [navigate])
 
@@ -85,7 +100,7 @@ export default function DirectMessages() {
         const convMap = new Map()
         data.forEach(msg => {
             const isMeSender = msg.sender_id === user.id
-            const otherPart = isMeSender ? msg.recipient : msg.sender
+            const otherPart = mergeCachedProfile(isMeSender ? msg.recipient : msg.sender)
 
             // It's possible for profile data to be missing if not yet synced
             if (!otherPart) return
@@ -97,6 +112,9 @@ export default function DirectMessages() {
             if (isDeletedForMe) return
 
             if (!convMap.has(otherId)) {
+                if (otherPart.username) {
+                    setCachedProfile(otherPart.username, otherPart)
+                }
                 convMap.set(otherId, {
                     id: otherId,
                     display_name: otherPart.display_name || otherPart.username,

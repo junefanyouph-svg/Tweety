@@ -5,7 +5,7 @@ import { supabase } from '../supabase'
 import GifPicker from './GifPicker'
 import UserMentionPicker from './UserMentionPicker'
 import { getCache, setCache, invalidateCache } from '../utils/cache'
-import { getProfile } from '../utils/profileCache'
+import { getCachedProfile, getProfile, setCachedProfile } from '../utils/profileCache'
 import RichTextEditor from './RichTextEditor'
 import { broadcastLike, broadcastComment, broadcastCommentLike } from '../utils/interactionsChannel'
 import { API_URL } from '../utils/apiUrl'
@@ -151,7 +151,20 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
   }
   fetchFnRef.current.fetchComments = async () => {
     const { data } = await supabase.from('comments').select('*, profiles(username, avatar_url, display_name), comment_likes(user_id)').eq('post_id', post.id).order('created_at', { ascending: true })
-    if (data) { setComments(data); commentsRef.current = data }
+    if (data) {
+      const mergedComments = data.map(comment => {
+        const cachedProfile = getCachedProfile(comment.profiles?.username)
+        const nextComment = cachedProfile
+          ? { ...comment, profiles: { ...cachedProfile, ...comment.profiles } }
+          : comment
+        if (nextComment.profiles?.username) {
+          setCachedProfile(nextComment.profiles.username, nextComment.profiles)
+        }
+        return nextComment
+      })
+      setComments(mergedComments)
+      commentsRef.current = mergedComments
+    }
   }
 
   useEffect(() => {
@@ -177,6 +190,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
       if (d) {
         if (d.display_name) setAuthorDisplayName(d.display_name)
         if (d.avatar_url) setAuthorAvatarUrl(d.avatar_url)
+        if (d.username) setCachedProfile(d.username, d)
       }
     })
   }, [postUsername])
@@ -190,6 +204,21 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
       if (detail.user_id === post.user_id && detail.avatar_url) {
         setAuthorAvatarUrl(detail.avatar_url)
       }
+      setComments(prev => {
+        const nextComments = prev.map(comment => {
+          if (comment.user_id !== detail.user_id) return comment
+          const nextProfile = { ...(comment.profiles || {}), ...detail }
+          if (nextProfile.username) {
+            setCachedProfile(nextProfile.username, nextProfile)
+          }
+          return {
+            ...comment,
+            profiles: nextProfile
+          }
+        })
+        commentsRef.current = nextComments
+        return nextComments
+      })
     }
     window.addEventListener('tweety_profile_updated', handleProfileUpdated)
     return () => window.removeEventListener('tweety_profile_updated', handleProfileUpdated)

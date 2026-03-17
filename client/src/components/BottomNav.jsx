@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../supabase'
+import { getCachedProfile, setCachedProfile } from '../utils/profileCache'
 
 export default function BottomNav() {
   const [user, setUser] = useState(null)
@@ -21,11 +22,19 @@ export default function BottomNav() {
     const { data: { user } } = await supabase.auth.getUser()
     setUser(user)
     if (user) {
+      const cachedProfile = getCachedProfile(user.user_metadata?.username)
+      if (cachedProfile) {
+        setProfile(cachedProfile)
+      }
+
       const { data: profileData } = await supabase
         .from('profiles')
         .select('*')
         .eq('user_id', user.id)
         .single()
+      if (profileData?.username) {
+        setCachedProfile(profileData.username, profileData)
+      }
       setProfile(profileData)
 
       const [
@@ -65,10 +74,23 @@ export default function BottomNav() {
         filter: `user_id=eq.${user.id}`
       }, (payload) => {
         setProfile(payload.new)
+        if (payload.new?.username) {
+          setCachedProfile(payload.new.username, payload.new)
+        }
       })
       .subscribe()
 
-    const handleProfileUpdate = () => { getUserData() }
+    const handleProfileUpdate = (e) => {
+      const detail = e.detail
+      if (!detail || detail.user_id !== user.id) return
+      setProfile(prev => {
+        const nextProfile = { ...(prev || {}), ...detail }
+        if (nextProfile.username) {
+          setCachedProfile(nextProfile.username, nextProfile)
+        }
+        return nextProfile
+      })
+    }
     window.addEventListener('tweety_profile_updated', handleProfileUpdate)
 
     fetchUnreadCount()

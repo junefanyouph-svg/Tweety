@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { styles } from '../styles/SwitchAccount.styles'
-import { getAccounts, saveAccount, removeAccount } from '../utils/accountStore'
+import { getAccounts, saveAccount, removeAccount, updateAccountProfile } from '../utils/accountStore'
 import { API_URL } from '../utils/apiUrl'
 
 export default function SwitchAccount() {
@@ -35,6 +35,16 @@ export default function SwitchAccount() {
             setAccounts(getAccounts())
         }
         init()
+
+        const handleProfileUpdated = (e) => {
+            const detail = e.detail
+            if (!detail?.user_id) return
+            updateAccountProfile(detail.user_id, detail)
+            setAccounts(getAccounts())
+        }
+
+        window.addEventListener('tweety_profile_updated', handleProfileUpdated)
+        return () => window.removeEventListener('tweety_profile_updated', handleProfileUpdated)
     }, [])
 
     const handleSwitch = async (account) => {

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../supabase'
+import { getCachedProfile, setCachedProfile } from '../utils/profileCache'
 
 export default function Sidebar() {
   const [user, setUser] = useState(null)
@@ -28,7 +29,17 @@ export default function Sidebar() {
 
   useEffect(() => {
     let channel;
-    const handleProfileUpdate = () => { if (user) fetchProfile(user); };
+    const handleProfileUpdate = (e) => {
+      const detail = e.detail
+      if (!detail || detail.user_id !== user?.id) return
+      setProfile(prev => {
+        const nextProfile = { ...(prev || {}), ...detail }
+        if (nextProfile.username) {
+          setCachedProfile(nextProfile.username, nextProfile)
+        }
+        return nextProfile
+      })
+    };
     window.addEventListener('tweety_profile_updated', handleProfileUpdate);
 
     const init = async () => {
@@ -48,6 +59,9 @@ export default function Sidebar() {
           }, (payload) => {
             console.log('Sidebar Realtime Update:', payload.new)
             setProfile(payload.new)
+            if (payload.new?.username) {
+              setCachedProfile(payload.new.username, payload.new)
+            }
           })
           .subscribe()
       }
@@ -60,11 +74,19 @@ export default function Sidebar() {
   }, [user?.id])
 
   const fetchProfile = async (user) => {
+    const cachedProfile = getCachedProfile(user.user_metadata?.username)
+    if (cachedProfile) {
+      setProfile(cachedProfile)
+    }
+
     const { data } = await supabase
       .from('profiles')
       .select('*')
       .eq('user_id', user.id)
       .single()
+    if (data?.username) {
+      setCachedProfile(data.username, data)
+    }
     setProfile(data)
   }
 

@@ -25,6 +25,16 @@ export const setCachedProfile = (username, profile) => {
   saveStore(store)
 }
 
+export const mergeCachedProfile = (profile) => {
+  if (!profile?.username) return profile
+  const cached = getCachedProfile(profile.username)
+  return cached ? { ...cached, ...profile } : profile
+}
+
+export const mergeCachedProfiles = (profiles = []) => {
+  return profiles.map(profile => mergeCachedProfile(profile))
+}
+
 export const getProfile = async (username, apiUrl) => {
   const store = getStore()
   const cached = store[username]
