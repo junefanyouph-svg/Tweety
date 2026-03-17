@@ -145,6 +145,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
   const lastCommentCursorPos = useRef(0)
   const navigate = useNavigate()
   const fetchFnRef = useRef({ fetchLikes: null, fetchComments: null })
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const commentsRef = useRef([])
   const closeCommentsTimerRef = useRef(null)
   const postImageUrls = getPostImageUrls(post)
@@ -688,6 +689,15 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
     })
   }
 
+  const handleImageScroll = (e) => {
+    const scrollLeft = e.target.scrollLeft
+    const width = e.target.clientWidth
+    const newIndex = Math.round(scrollLeft / width)
+    if (newIndex !== currentImageIndex) {
+      setCurrentImageIndex(newIndex)
+    }
+  }
+
   const renderCommentThread = (comment, depth = 0, isLast = false) => {
     const replies = comments.filter(c => c.parent_id === comment.id);
     const hasReplies = replies.length > 0;
@@ -916,39 +926,24 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
             <CachedImage src={postImageUrls[0]} fallbackSrc={postImageUrls[0]} className="max-w-full max-h-[500px] w-auto h-auto object-contain cursor-pointer" alt="" onClick={(e) => { e.stopPropagation(); setViewingImage(postImageUrls[0]) }} />
           </div>
         )}
-        {postImageUrls.length === 2 && (
-          <div className="mt-3 grid grid-cols-2 gap-2 overflow-hidden rounded-2xl">
-            {postImageUrls.map((imageUrl, index) => (
-              <div key={imageUrl} className="overflow-hidden bg-black/5 h-[260px]">
-                <CachedImage src={imageUrl} fallbackSrc={imageUrl} className="w-full h-full object-cover cursor-pointer" alt="" onClick={(e) => { e.stopPropagation(); openPostMediaGallery(index) }} />
-              </div>
-            ))}
-          </div>
-        )}
-        {postImageUrls.length === 3 && (
-          <div className="mt-3 grid grid-cols-3 gap-2 h-[260px] overflow-hidden rounded-2xl">
-            {postImageUrls.map((imageUrl, index) => (
-              <div key={imageUrl} className="overflow-hidden bg-black/5 h-[260px]">
-                <CachedImage src={imageUrl} fallbackSrc={imageUrl} className="w-full h-full object-cover cursor-pointer" alt="" onClick={(e) => { e.stopPropagation(); openPostMediaGallery(index) }} />
-              </div>
-            ))}
-          </div>
-        )}
-        {postImageUrls.length >= 4 && (
-          <div className="mt-3 grid grid-cols-[1.15fr_0.85fr] gap-2 h-[360px] overflow-hidden rounded-2xl">
-            <div className="overflow-hidden bg-black/5 h-full">
-              <CachedImage src={postImageUrls[0]} fallbackSrc={postImageUrls[0]} className="w-full h-full object-cover cursor-pointer" alt="" onClick={(e) => { e.stopPropagation(); openPostMediaGallery(0) }} />
-            </div>
-            <div className="grid grid-rows-2 gap-2 h-full">
-              <div className="overflow-hidden bg-black/5 h-full">
-                <CachedImage src={postImageUrls[1]} fallbackSrc={postImageUrls[1]} className="w-full h-full object-cover cursor-pointer" alt="" onClick={(e) => { e.stopPropagation(); openPostMediaGallery(1) }} />
-              </div>
-              <button className="relative overflow-hidden bg-black/40 h-full border-none p-0 cursor-pointer" onClick={(e) => { e.stopPropagation(); openPostMediaGallery(2) }}>
-                <CachedImage src={postImageUrls[2]} fallbackSrc={postImageUrls[2]} className="w-full h-full object-cover blur-[2px] scale-105" alt="" />
-                <div className="absolute inset-0 bg-black/35 flex items-center justify-center text-white text-[2rem] font-bold">
-                  +{postImageUrls.length - 2}
+        {postImageUrls.length > 1 && (
+          <div className="mt-3 relative">
+            <div className="carousel-container rounded-2xl overflow-hidden bg-black/5 flex h-[350px] relative" onScroll={handleImageScroll}>
+              {postImageUrls.map((imageUrl, index) => (
+                <div key={index} className="carousel-slide relative h-full w-full shrink-0 flex items-center justify-center">
+                  <CachedImage src={imageUrl} fallbackSrc={imageUrl} className="w-full h-full object-cover cursor-pointer" alt="" onClick={(e) => { e.stopPropagation(); setViewingImage(imageUrl) }} />
                 </div>
-              </button>
+              ))}
+            </div>
+            
+            {/* Pagination Dots */}
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-10 bg-black/40 px-3 py-1.5 rounded-full" onClick={e => e.stopPropagation()}>
+              {postImageUrls.map((_, index) => (
+                <div 
+                  key={index} 
+                  className={`rounded-full transition-all duration-300 ${index === currentImageIndex ? 'bg-primary w-2 h-2 scale-110' : 'bg-white/60 w-1.5 h-1.5'}`} 
+                />
+              ))}
             </div>
           </div>
         )}

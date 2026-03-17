@@ -644,4 +644,23 @@ html.light-mode {
   'wght' 400,
   'GRAD' 0,
   'opsz' 24;
+}
+
+/* Carousel Styles */
+.carousel-container {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  scroll-behavior: smooth;
+}
+
+.carousel-container::-webkit-scrollbar {
+  display: none;
+}
+
+.carousel-slide {
+  flex: 0 0 100%;
+  scroll-snap-align: center;
 }
