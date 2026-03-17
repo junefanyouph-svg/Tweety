@@ -5,7 +5,6 @@ import GifPicker from './GifPicker'
 import UserMentionPicker from './UserMentionPicker'
 import RichTextEditor from './RichTextEditor'
 import { API_URL } from '../utils/apiUrl'
-import { getProfile } from '../utils/profileCache'
 import { DEFAULT_IMAGE_UPLOAD_OPTIONS, compressImageForUpload, getUploadExtension } from '../utils/imageUpload'
 
 export default function ComposeModal({ isOpen, onClose, onSuccess }) {
@@ -32,10 +31,16 @@ export default function ComposeModal({ isOpen, onClose, onSuccess }) {
   const lastCursorPos = useRef(0)
 
   const fetchCurrentUserProfile = async (authUser) => {
-    if (!authUser?.user_metadata?.username) return
-    const profile = await getProfile(authUser.user_metadata.username, API_URL)
-    if (profile && !profile.error) {
-      setUserProfile(profile)
+    if (!authUser?.id) return
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('user_id, username, display_name, avatar_url, bio')
+      .eq('user_id', authUser.id)
+      .single()
+
+    if (!error && data) {
+      setUserProfile(data)
     }
   }
 
