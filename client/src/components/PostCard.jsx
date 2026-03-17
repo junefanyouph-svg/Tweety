@@ -95,6 +95,96 @@ function ScopedConfirmDialog({ title, message, confirmLabel, onCancel, onConfirm
   )
 }
 
+function ExpandedImageViewer({ initialImage, images, onClose }) {
+  const [currentIndex, setCurrentIndex] = useState(images.indexOf(initialImage) > -1 ? images.indexOf(initialImage) : 0)
+  const expandedCarouselRef = useRef(null)
+  const isMultiple = images.length > 1 && images.indexOf(initialImage) > -1
+  
+  const isFirstMount = useRef(true)
+  useEffect(() => {
+    if (isFirstMount.current && expandedCarouselRef.current && isMultiple) {
+      expandedCarouselRef.current.scrollTo({ left: currentIndex * expandedCarouselRef.current.clientWidth, behavior: 'auto' })
+      isFirstMount.current = false
+    }
+  }, [currentIndex, isMultiple])
+
+  const scrollTo = (index) => {
+    setCurrentIndex(index)
+    if (expandedCarouselRef.current) {
+      expandedCarouselRef.current.scrollTo({ left: index * expandedCarouselRef.current.clientWidth, behavior: 'smooth' })
+    }
+  }
+
+  const handleScroll = (e) => {
+    const width = e.target.clientWidth;
+    const index = Math.round(e.target.scrollLeft / width);
+    if (index !== currentIndex) {
+      setCurrentIndex(index);
+    }
+  }
+
+  return createPortal(
+    <div className="fixed inset-0 bg-black/85 z-[99999] flex items-center justify-center backdrop-blur-md" onClick={onClose}>
+      <div className="relative animate-[popIn_0.3s_ease-out] flex flex-col items-center group w-full h-full justify-center" onClick={(e) => e.stopPropagation()}>
+        <button className="absolute top-4 right-4 md:top-8 md:right-8 text-white cursor-pointer bg-black/50 hover:bg-black/80 rounded-full w-10 h-10 flex items-center justify-center border-none text-xl hover:text-primary transition-colors z-[100000]" onClick={onClose}>
+          <span className="material-symbols-outlined filled">close</span>
+        </button>
+
+        {isMultiple ? (
+          <>
+            <div 
+              className="carousel-container w-full h-full flex items-center" 
+              ref={expandedCarouselRef} 
+              onScroll={handleScroll}
+            >
+              {images.map((img, idx) => (
+                <div key={idx} className="carousel-slide relative h-full w-full shrink-0 flex items-center justify-center p-4 md:p-12 pb-[100px]">
+                  <CachedImage src={img} fallbackSrc={img} className="max-w-full max-h-full rounded-lg shadow-2xl object-contain cursor-default" alt="" />
+                </div>
+              ))}
+            </div>
+
+            {currentIndex > 0 && (
+              <button 
+                className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center cursor-pointer border-none transition-colors z-50"
+                onClick={(e) => { e.stopPropagation(); scrollTo(currentIndex - 1) }}
+              >
+                <span className="material-symbols-outlined filled text-[1.2rem]">arrow_back_ios_new</span>
+              </button>
+            )}
+            
+            {currentIndex < images.length - 1 && (
+              <button 
+                className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center cursor-pointer border-none transition-colors z-50"
+                onClick={(e) => { e.stopPropagation(); scrollTo(currentIndex + 1) }}
+              >
+                <span className="material-symbols-outlined filled text-[1.2rem]">arrow_forward_ios</span>
+              </button>
+            )}
+
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 px-4 py-2 rounded-xl z-50 max-w-full overflow-x-auto carousel-container">
+              {images.map((img, idx) => (
+                <div 
+                  key={idx} 
+                  className={`shrink-0 w-14 h-14 md:w-16 md:h-16 rounded-md overflow-hidden cursor-pointer transition-all duration-300 border-2 ${idx === currentIndex ? 'border-primary opacity-100 scale-110' : 'border-transparent opacity-50 hover:opacity-100'}`}
+                  onClick={(e) => { e.stopPropagation(); scrollTo(idx) }}
+                >
+                  <CachedImage src={img} fallbackSrc={img} className="w-full h-full object-cover bg-black" alt="" />
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="flex items-center justify-center p-4">
+             <CachedImage src={initialImage} fallbackSrc={initialImage} className="max-w-[100vw] lg:max-w-[90vw] max-h-[85vh] rounded-lg shadow-2xl object-contain cursor-default" alt="" />
+          </div>
+        )}
+      </div>
+    </div>,
+    document.body
+  )
+}
+
 export default function PostCard({ post, user, onDelete, onNavigate, defaultOpenComments = false, highlightQuery = '' }) {
   const [likes, setLikes] = useState([])
   const [comments, setComments] = useState([])
@@ -1050,48 +1140,12 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
           </div>
         </div>
       )}
-      {viewingImage && createPortal(
-        <div className="fixed inset-0 bg-black/85 z-[99999] flex items-center justify-center backdrop-blur-md" onClick={() => setViewingImage(null)}>
-          <div className="relative animate-[popIn_0.3s_ease-out] flex flex-col items-center group" onClick={(e) => e.stopPropagation()}>
-            <button className="absolute -top-10 right-0 text-white cursor-pointer bg-none border-none text-xl hover:text-primary transition-colors" onClick={() => setViewingImage(null)}>
-              <span className="material-symbols-outlined filled">close</span>
-            </button>
-            
-            <div className="relative flex items-center justify-center">
-              <CachedImage src={viewingImage} fallbackSrc={viewingImage} className="max-w-[100vw] lg:max-w-[90vw] max-h-[85vh] rounded-lg shadow-2xl object-contain" alt="" />
-              
-              {postImageUrls.indexOf(viewingImage) > 0 && (
-                <button 
-                  className="absolute left-2 md:-left-14 top-1/2 -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 rounded-full bg-black/60 md:bg-white/10 hover:bg-black/80 md:hover:bg-white/20 text-white flex items-center justify-center cursor-pointer border-none transition-colors z-50"
-                  onClick={(e) => { e.stopPropagation(); setViewingImage(postImageUrls[postImageUrls.indexOf(viewingImage) - 1]) }}
-                >
-                  <span className="material-symbols-outlined filled text-[1rem] md:text-[1.2rem]">arrow_back_ios_new</span>
-                </button>
-              )}
-              
-              {postImageUrls.indexOf(viewingImage) > -1 && postImageUrls.indexOf(viewingImage) < postImageUrls.length - 1 && (
-                <button 
-                  className="absolute right-2 md:-right-14 top-1/2 -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 rounded-full bg-black/60 md:bg-white/10 hover:bg-black/80 md:hover:bg-white/20 text-white flex items-center justify-center cursor-pointer border-none transition-colors z-50"
-                  onClick={(e) => { e.stopPropagation(); setViewingImage(postImageUrls[postImageUrls.indexOf(viewingImage) + 1]) }}
-                >
-                  <span className="material-symbols-outlined filled text-[1rem] md:text-[1.2rem]">arrow_forward_ios</span>
-                </button>
-              )}
-            </div>
-
-            {postImageUrls.indexOf(viewingImage) > -1 && postImageUrls.length > 1 && (
-              <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-black/40 px-3 py-1.5 rounded-full z-50">
-                {postImageUrls.map((_, index) => (
-                  <div 
-                    key={index} 
-                    className={`rounded-full transition-all duration-300 ${index === postImageUrls.indexOf(viewingImage) ? 'bg-primary w-2 h-2 scale-110' : 'bg-white/60 w-1.5 h-1.5'}`} 
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        </div>,
-        document.body
+      {viewingImage && (
+        <ExpandedImageViewer
+          initialImage={viewingImage}
+          images={postImageUrls}
+          onClose={() => setViewingImage(null)}
+        />
       )}
       {showDeleteModal && (
         <ScopedConfirmDialog
