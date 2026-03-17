@@ -144,10 +144,15 @@ export default function ComposeModal({ isOpen, onClose, onSuccess }) {
     const file = e.target.files[0]
     if (!file) return
 
+    attachImageFile(file)
+  }
+
+  const attachImageFile = (file) => {
+    if (!file) return false
     if (file.size > DEFAULT_IMAGE_UPLOAD_OPTIONS.maxInputBytes) {
       alert('Image must be under 20 MB before compression.')
       if (fileInputRef.current) fileInputRef.current.value = ''
-      return
+      return true
     }
 
     setImageFile(file)
@@ -155,6 +160,17 @@ export default function ComposeModal({ isOpen, onClose, onSuccess }) {
     const reader = new FileReader()
     reader.onload = (e) => setImagePreview(e.target.result)
     reader.readAsDataURL(file)
+    return true
+  }
+
+  const handleImagePaste = async (e) => {
+    const items = Array.from(e.clipboardData?.items || [])
+    const imageItem = items.find(item => item.type.startsWith('image/'))
+    if (!imageItem) return false
+
+    e.preventDefault()
+    const file = imageItem.getAsFile()
+    return attachImageFile(file)
   }
 
   const handleGifSelect = (url) => {
@@ -401,6 +417,7 @@ export default function ComposeModal({ isOpen, onClose, onSuccess }) {
           <RichTextEditor
             content={content}
             onChange={handleContentChange}
+            onPaste={handleImagePaste}
             placeholder="What's happening?"
             textareaRef={textareaRef}
             minHeight={isMobile ? '120px' : '80px'}

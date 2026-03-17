@@ -181,12 +181,17 @@ export default function ChatPage() {
         const file = e.target.files[0]
         if (!file) return
 
+        attachMediaFile(file)
+    }
+
+    const attachMediaFile = (file) => {
+        if (!file) return false
         const type = file.type.startsWith('video') ? 'video' : 'image'
 
         if (type === 'image' && file.size > DEFAULT_IMAGE_UPLOAD_OPTIONS.maxInputBytes) {
             alert('Image must be under 20 MB before compression.')
             if (fileInputRef.current) fileInputRef.current.value = ''
-            return
+            return true
         }
 
         setMediaFile(file)
@@ -196,6 +201,17 @@ export default function ChatPage() {
         reader.onload = (e) => setMediaPreview(e.target.result)
         reader.readAsDataURL(file)
         setShowPlusMenu(false)
+        return true
+    }
+
+    const handlePaste = (e) => {
+        const items = Array.from(e.clipboardData?.items || [])
+        const imageItem = items.find(item => item.type.startsWith('image/'))
+        if (!imageItem) return
+
+        e.preventDefault()
+        const file = imageItem.getAsFile()
+        attachMediaFile(file)
     }
 
     const clearMedia = () => {
@@ -618,6 +634,7 @@ export default function ChatPage() {
                             placeholder="Start a new message"
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
+                            onPaste={handlePaste}
                             onKeyDown={handleKeyDown}
                             rows={1}
                             disabled={sending}
