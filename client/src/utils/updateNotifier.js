@@ -1,4 +1,5 @@
 const VERSION_POLL_INTERVAL_MS = 60 * 1000
+const RELOAD_DELAY_MS = 2500
 
 function getCurrentBuildId() {
   return import.meta.env.VITE_BUILD_ID || null
@@ -31,11 +32,55 @@ export function startUpdateNotifier() {
   }
 
   let isReloading = false
+  let reloadTimeoutId = null
+  let toastElement = null
+
+  const removeToast = () => {
+    if (toastElement) {
+      toastElement.remove()
+      toastElement = null
+    }
+  }
+
+  const showToast = () => {
+    if (toastElement) return
+
+    toastElement = document.createElement('div')
+    toastElement.textContent = 'New version available, refreshing...'
+    Object.assign(toastElement.style, {
+      position: 'fixed',
+      left: '50%',
+      bottom: '24px',
+      transform: 'translateX(-50%) translateY(10px)',
+      zIndex: '999999',
+      padding: '10px 16px',
+      borderRadius: '999px',
+      border: '1px solid rgba(0, 191, 166, 0.35)',
+      background: 'rgba(15, 17, 23, 0.96)',
+      boxShadow: '0 10px 30px rgba(0, 0, 0, 0.35)',
+      color: '#e8e8e8',
+      fontSize: '0.9rem',
+      fontWeight: '600',
+      letterSpacing: '0.01em',
+      opacity: '0',
+      transition: 'opacity 0.18s ease, transform 0.18s ease'
+    })
+
+    document.body.appendChild(toastElement)
+    window.requestAnimationFrame(() => {
+      if (!toastElement) return
+      toastElement.style.opacity = '1'
+      toastElement.style.transform = 'translateX(-50%) translateY(0)'
+    })
+  }
 
   const reloadToLatest = () => {
     if (isReloading) return
     isReloading = true
-    window.location.reload()
+    showToast()
+    reloadTimeoutId = window.setTimeout(() => {
+      window.location.reload()
+    }, RELOAD_DELAY_MS)
   }
 
   const checkForUpdate = async () => {
@@ -64,6 +109,10 @@ export function startUpdateNotifier() {
 
   return () => {
     window.clearInterval(intervalId)
+    if (reloadTimeoutId) {
+      window.clearTimeout(reloadTimeoutId)
+    }
+    removeToast()
     window.removeEventListener('focus', checkForUpdate)
     document.removeEventListener('visibilitychange', handleVisibilityChange)
   }
