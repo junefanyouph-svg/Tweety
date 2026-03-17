@@ -912,27 +912,27 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
         </div>
         <div className="text-base leading-relaxed text-text-main mb-1">{renderContent(post.content, navigate, highlightQuery)}{post.edited && <span className="text-text-dim text-[0.72rem] ml-1.5 italic">(edited)</span>}</div>
         {postImageUrls.length === 1 && (
-          <div className="mt-3 overflow-hidden max-h-[500px] flex justify-center bg-black/5 flex justify-center">
+          <div className="mt-3 overflow-hidden max-h-[500px] flex justify-center bg-black/5">
             <CachedImage src={postImageUrls[0]} fallbackSrc={postImageUrls[0]} className="max-w-full max-h-[500px] w-auto h-auto object-contain cursor-pointer" alt="" onClick={(e) => { e.stopPropagation(); setViewingImage(postImageUrls[0]) }} />
           </div>
         )}
         {postImageUrls.length === 2 && (
-          <div className="mt-3 grid grid-cols-2 gap-2">
+          <div className="mt-3 grid grid-cols-2 gap-2 overflow-hidden rounded-2xl">
             {postImageUrls.map((imageUrl, index) => (
-              <div key={imageUrl} className="overflow-hidden rounded-2xl bg-black/5 h-[260px]">
+              <div key={imageUrl} className="overflow-hidden bg-black/5 h-[260px]">
                 <CachedImage src={imageUrl} fallbackSrc={imageUrl} className="w-full h-full object-cover cursor-pointer" alt="" onClick={(e) => { e.stopPropagation(); openPostMediaGallery(index) }} />
               </div>
             ))}
           </div>
         )}
         {postImageUrls.length === 3 && (
-          <div className="mt-3 grid grid-cols-[1.15fr_0.85fr] gap-2 h-[360px]">
-            <div className="overflow-hidden rounded-2xl bg-black/5 h-full">
+          <div className="mt-3 grid grid-cols-[1.15fr_0.85fr] gap-2 h-[360px] overflow-hidden rounded-2xl">
+            <div className="overflow-hidden bg-black/5 h-full">
               <CachedImage src={postImageUrls[0]} fallbackSrc={postImageUrls[0]} className="w-full h-full object-cover cursor-pointer" alt="" onClick={(e) => { e.stopPropagation(); openPostMediaGallery(0) }} />
             </div>
             <div className="grid grid-rows-2 gap-2 h-full">
               {postImageUrls.slice(1).map((imageUrl, index) => (
-                <div key={imageUrl} className="overflow-hidden rounded-2xl bg-black/5 h-full">
+                <div key={imageUrl} className="overflow-hidden bg-black/5 h-full">
                   <CachedImage src={imageUrl} fallbackSrc={imageUrl} className="w-full h-full object-cover cursor-pointer" alt="" onClick={(e) => { e.stopPropagation(); openPostMediaGallery(index + 1) }} />
                 </div>
               ))}
@@ -940,15 +940,15 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
           </div>
         )}
         {postImageUrls.length >= 4 && (
-          <div className="mt-3 grid grid-cols-[1.15fr_0.85fr] gap-2 h-[360px]">
-            <div className="overflow-hidden rounded-2xl bg-black/5 h-full">
+          <div className="mt-3 grid grid-cols-[1.15fr_0.85fr] gap-2 h-[360px] overflow-hidden rounded-2xl">
+            <div className="overflow-hidden bg-black/5 h-full">
               <CachedImage src={postImageUrls[0]} fallbackSrc={postImageUrls[0]} className="w-full h-full object-cover cursor-pointer" alt="" onClick={(e) => { e.stopPropagation(); openPostMediaGallery(0) }} />
             </div>
             <div className="grid grid-rows-2 gap-2 h-full">
-              <div className="overflow-hidden rounded-2xl bg-black/5 h-full">
+              <div className="overflow-hidden bg-black/5 h-full">
                 <CachedImage src={postImageUrls[1]} fallbackSrc={postImageUrls[1]} className="w-full h-full object-cover cursor-pointer" alt="" onClick={(e) => { e.stopPropagation(); openPostMediaGallery(1) }} />
               </div>
-              <button className="relative overflow-hidden rounded-2xl bg-black/40 h-full border-none p-0 cursor-pointer" onClick={(e) => { e.stopPropagation(); openPostMediaGallery(2) }}>
+              <button className="relative overflow-hidden bg-black/40 h-full border-none p-0 cursor-pointer" onClick={(e) => { e.stopPropagation(); openPostMediaGallery(2) }}>
                 <CachedImage src={postImageUrls[2]} fallbackSrc={postImageUrls[2]} className="w-full h-full object-cover blur-[2px] scale-105" alt="" />
                 <div className="absolute inset-0 bg-black/35 flex items-center justify-center text-white text-[2rem] font-bold">
                   +{postImageUrls.length - 2}
@@ -959,7 +959,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
         )}
       </div>
 
-      <div className="flex gap-2 mt-4 items-center border-t border-border-dark pt-3" onClick={(e) => { e.stopPropagation(); toggleComments(); }}>
+      <div className="flex gap-2 mt-4 items-center border-t border-border-dark pt-3 relative z-10" onClick={(e) => { e.stopPropagation(); toggleComments(); }}>
         <button className={`bg-none border-none cursor-pointer text-[0.9rem] py-1.5 px-3 rounded-lg flex items-center gap-1.5 hover:bg-primary-dim transition-colors ${likes.some(l => l.user_id === user?.id) ? 'text-[#e0245e]' : 'text-text-dim'} ${heartAnim ? 'heart-bounce' : ''}`} onClick={(e) => { e.stopPropagation(); handleLike(); }}><span className={`material-symbols-outlined text-[1.1rem] ${likes.some(l => l.user_id === user?.id) ? 'filled' : ''}`}>favorite</span> <span>{likes.length}</span></button>
         <button className={`bg-none border-none cursor-pointer text-[0.9rem] py-1.5 px-3 rounded-lg flex items-center gap-1.5 hover:bg-primary-dim transition-colors ${showComments ? 'text-primary' : 'text-text-dim'}`} onClick={(e) => { e.stopPropagation(); toggleComments(); }}><span className="material-symbols-outlined">mode_comment</span> <span>{comments.length}</span></button>
       </div>
