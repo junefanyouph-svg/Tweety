@@ -31,6 +31,14 @@ export default function ComposeModal({ isOpen, onClose, onSuccess }) {
   const composeBoxRef = useRef(null)
   const lastCursorPos = useRef(0)
 
+  const fetchCurrentUserProfile = async (authUser) => {
+    if (!authUser?.user_metadata?.username) return
+    const profile = await getProfile(authUser.user_metadata.username, API_URL)
+    if (profile && !profile.error) {
+      setUserProfile(profile)
+    }
+  }
+
   // YouTube URL patterns
   const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/g
 
@@ -65,8 +73,7 @@ export default function ComposeModal({ isOpen, onClose, onSuccess }) {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         setUser(user)
-        const profile = await getProfile(user.user_metadata?.username, API_URL)
-        if (profile) setUserProfile(profile)
+        await fetchCurrentUserProfile(user)
       }
     }
     getUser()
@@ -90,6 +97,26 @@ export default function ComposeModal({ isOpen, onClose, onSuccess }) {
       return () => window.removeEventListener('resize', updateVp)
     }
   }, [])
+
+  useEffect(() => {
+    if (!isOpen || !user) return
+    fetchCurrentUserProfile(user)
+  }, [isOpen, user])
+
+  useEffect(() => {
+    const handleProfileUpdated = (e) => {
+      const detail = e.detail
+      if (!detail || detail.user_id !== user?.id) return
+
+      setUserProfile(prev => ({
+        ...(prev || {}),
+        ...detail
+      }))
+    }
+
+    window.addEventListener('tweety_profile_updated', handleProfileUpdated)
+    return () => window.removeEventListener('tweety_profile_updated', handleProfileUpdated)
+  }, [user?.id])
 
   const handleImageSelect = (e) => {
     const file = e.target.files[0]
