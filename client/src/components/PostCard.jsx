@@ -123,18 +123,35 @@ function ExpandedImageViewer({ initialImage, images, onClose }) {
     }
   }
 
+  const onCloseRef = useRef(onClose)
   useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') onClose()
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
+    onCloseRef.current = onClose
   }, [onClose])
 
+  useEffect(() => {
+    window.history.pushState({ imageViewerOpen: true }, '')
+
+    const handlePopState = () => {
+      onCloseRef.current(true)
+    }
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onCloseRef.current(false)
+    }
+
+    window.addEventListener('popstate', handlePopState)
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState)
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [])
+
   return createPortal(
-    <div className="fixed inset-0 bg-black/85 z-[99999] flex items-center justify-center backdrop-blur-md" onClick={onClose}>
-      <div className="relative animate-[popIn_0.3s_ease-out] flex flex-col items-center group w-full h-full justify-center">
-        <button className="absolute top-4 right-4 md:top-8 md:right-8 text-white cursor-pointer bg-black/50 hover:bg-black/80 rounded-full w-10 h-10 flex items-center justify-center border-none text-xl hover:text-primary transition-colors z-[100000]" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/85 z-[99999] flex items-center justify-center backdrop-blur-md" onClick={() => onClose(false)}>
+      <div className="relative animate-[popIn_0.3s_ease-out] flex flex-col items-center group w-full h-full justify-center" onClick={(e) => e.stopPropagation()}>
+        <button className="absolute top-4 right-4 md:top-8 md:right-8 text-white cursor-pointer bg-black/50 hover:bg-black/80 rounded-full w-10 h-10 flex items-center justify-center border-none text-xl hover:text-primary transition-colors z-[100000]" onClick={() => onClose(false)}>
           <span className="material-symbols-outlined filled">close</span>
         </button>
 
@@ -1152,7 +1169,12 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
         <ExpandedImageViewer
           initialImage={viewingImage}
           images={postImageUrls}
-          onClose={() => setViewingImage(null)}
+          onClose={(fromPopState) => {
+            setViewingImage(null)
+            if (fromPopState !== true) {
+              window.history.back()
+            }
+          }}
         />
       )}
       {showDeleteModal && (

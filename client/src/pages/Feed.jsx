@@ -16,6 +16,7 @@ export default function Feed() {
   const headerOffset = useRef(0)
   const headerRef = useRef(null)
   const navigate = useNavigate()
+  const isScrolled = useRef(window.scrollY > 400)
 
   useEffect(() => {
     const handleScroll = () => {
@@ -32,9 +33,42 @@ export default function Feed() {
       if (currentScrollY <= 0) headerOffset.current = 0
 
       headerRef.current.style.transform = `translateY(${headerOffset.current}px)`
+
+      // Handle "Back to top" history logic
+      if (currentScrollY > 400 && !isScrolled.current) {
+        isScrolled.current = true
+        if (window.location.hash !== '#scrolled') {
+          window.history.pushState(null, '', window.location.pathname + window.location.search + '#scrolled')
+        }
+      } else if (currentScrollY <= 100 && isScrolled.current) {
+        isScrolled.current = false
+        if (window.location.hash === '#scrolled') {
+          window.history.replaceState(null, '', window.location.pathname + window.location.search)
+        }
+      }
     }
+
+    const handlePopState = () => {
+      if (isScrolled.current && window.location.hash !== '#scrolled') {
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+        isScrolled.current = false
+      }
+    }
+
+    // Cleanup initial stray hash if scroll restoration leaves us near top
+    setTimeout(() => {
+      if (window.scrollY <= 100 && window.location.hash === '#scrolled') {
+        window.history.replaceState(null, '', window.location.pathname + window.location.search)
+        isScrolled.current = false
+      }
+    }, 100)
+
     window.addEventListener('scroll', handleScroll, { passive: true })
-    return () => window.removeEventListener('scroll', handleScroll)
+    window.addEventListener('popstate', handlePopState)
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+      window.removeEventListener('popstate', handlePopState)
+    }
   }, [])
 
   useEffect(() => {
