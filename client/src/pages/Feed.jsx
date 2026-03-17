@@ -73,8 +73,8 @@ export default function Feed() {
       setPosts(cached)
       setLoading(false)
       const { data } = await supabase
-        .from('posts_with_user_likes')
-        .select('*')
+        .from('posts')
+        .select('*, profiles(username, display_name, avatar_url)')
         .order('created_at', { ascending: false })
       if (data) {
         setPosts(data)
@@ -84,8 +84,8 @@ export default function Feed() {
     }
 
     const { data, error } = await supabase
-      .from('posts_with_user_likes')
-      .select('*')
+      .from('posts')
+      .select('*, profiles(username, display_name, avatar_url)')
       .order('created_at', { ascending: false })
     
     if (error) {

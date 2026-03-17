@@ -87,7 +87,7 @@ router.delete('/account', async (req, res) => {
   const { user_id } = req.body
 
   const [{ data: userPosts }, { data: userComments }] = await Promise.all([
-    supabase.from('posts').select('id, image_url').eq('user_id', user_id),
+    supabase.from('posts').select('id, image_url, image_urls').eq('user_id', user_id),
     supabase.from('comments').select('id, image_url').eq('user_id', user_id)
   ])
 
@@ -97,9 +97,11 @@ router.delete('/account', async (req, res) => {
     : { data: [] }
 
   const mediaToQueue = [
-    ...(userPosts || [])
-      .filter(post => post.image_url)
-      .map(post => ({ mediaUrl: post.image_url, sourceType: 'post', sourceId: post.id })),
+    ...(userPosts || []).flatMap(post =>
+      [...(post.image_urls || []), post.image_url]
+        .filter(Boolean)
+        .map(mediaUrl => ({ mediaUrl, sourceType: 'post', sourceId: post.id }))
+    ),
     ...(userComments || [])
       .filter(comment => comment.image_url)
       .map(comment => ({ mediaUrl: comment.image_url, sourceType: 'comment', sourceId: comment.id })),

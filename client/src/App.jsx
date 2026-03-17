@@ -11,6 +11,7 @@ import Search from './pages/Search'
 import Notifications from './pages/Notifications'
 import Settings from './pages/Settings'
 import PostPage from './pages/PostPage'
+import PostMediaPage from './pages/PostMediaPage'
 import SwitchAccount from './pages/SwitchAccount'
 import DirectMessages from './pages/DirectMessages'
 import ChatPage from './pages/ChatPage'
@@ -111,6 +112,7 @@ function App() {
         <Route path="/messages/:userId" element={session ? <Layout><ChatPage /></Layout> : <Navigate to="/" />} />
         <Route path="/settings" element={session ? <Layout><Settings /></Layout> : <Navigate to="/" />} />
         <Route path="/post/:id" element={session ? <Layout><PostPage /></Layout> : <Navigate to="/" />} />
+        <Route path="/post/:id/media" element={session ? <Layout><PostMediaPage /></Layout> : <Navigate to="/" />} />
         <Route path="/switch-account" element={<SwitchAccount />} />
       </Routes>
     </>

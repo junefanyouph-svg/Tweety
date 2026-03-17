@@ -7,12 +7,13 @@ import RichTextEditor from './RichTextEditor'
 import { API_URL } from '../utils/apiUrl'
 import { DEFAULT_IMAGE_UPLOAD_OPTIONS, compressImageForUpload, getUploadExtension } from '../utils/imageUpload'
 import { getCachedProfile, setCachedProfile } from '../utils/profileCache'
+import { MAX_POST_IMAGES } from '../utils/postMedia'
 
 export default function ComposeModal({ isOpen, onClose, onSuccess }) {
   const [content, setContent] = useState('')
   const [user, setUser] = useState(null)
-  const [imageFile, setImageFile] = useState(null)
-  const [imagePreview, setImagePreview] = useState(null)
+  const [imageFiles, setImageFiles] = useState([])
+  const [imagePreviews, setImagePreviews] = useState([])
   const [showGifPicker, setShowGifPicker] = useState(false)
   const [gifUrl, setGifUrl] = useState(null)
   const [uploading, setUploading] = useState(false)
@@ -141,50 +142,77 @@ export default function ComposeModal({ isOpen, onClose, onSuccess }) {
   }, [user?.id])
 
   const handleImageSelect = (e) => {
-    const file = e.target.files[0]
-    if (!file) return
-
-    attachImageFile(file)
+    const files = Array.from(e.target.files || [])
+    if (!files.length) return
+    attachImageFiles(files)
   }
 
-  const attachImageFile = (file) => {
-    if (!file) return false
-    if (file.size > DEFAULT_IMAGE_UPLOAD_OPTIONS.maxInputBytes) {
-      alert('Image must be under 20 MB before compression.')
+  const attachImageFiles = (files) => {
+    const nextFiles = []
+
+    for (const file of files) {
+      if (!file) continue
+      if (file.size > DEFAULT_IMAGE_UPLOAD_OPTIONS.maxInputBytes) {
+        alert('Each image must be under 20 MB before compression.')
+        if (fileInputRef.current) fileInputRef.current.value = ''
+        return true
+      }
+      nextFiles.push(file)
+    }
+
+    if (!nextFiles.length) return false
+
+    const totalCount = imageFiles.length + nextFiles.length
+    if (totalCount > MAX_POST_IMAGES) {
+      alert(`You can attach up to ${MAX_POST_IMAGES} images per post.`)
       if (fileInputRef.current) fileInputRef.current.value = ''
       return true
     }
 
-    setImageFile(file)
+    setImageFiles(prev => [...prev, ...nextFiles])
     setGifUrl(null)
-    const reader = new FileReader()
-    reader.onload = (e) => setImagePreview(e.target.result)
-    reader.readAsDataURL(file)
+
+    nextFiles.forEach(file => {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        setImagePreviews(prev => [...prev, { id: `${file.name}-${file.lastModified}-${prev.length}`, src: e.target.result }])
+      }
+      reader.readAsDataURL(file)
+    })
+
     return true
   }
 
   const handleImagePaste = async (e) => {
     const items = Array.from(e.clipboardData?.items || [])
-    const imageItem = items.find(item => item.type.startsWith('image/'))
-    if (!imageItem) return false
+    const imageItems = items.filter(item => item.type.startsWith('image/'))
+    if (!imageItems.length) return false
 
     e.preventDefault()
-    const file = imageItem.getAsFile()
-    return attachImageFile(file)
+    const files = imageItems.map(item => item.getAsFile()).filter(Boolean)
+    return attachImageFiles(files)
   }
 
   const handleGifSelect = (url) => {
     setGifUrl(url)
-    setImageFile(null)
-    setImagePreview(url)
+    setImageFiles([])
+    setImagePreviews([])
     setShowGifPicker(false)
   }
 
-  const clearImage = () => {
-    setImageFile(null)
-    setImagePreview(null)
+  const clearImages = () => {
+    setImageFiles([])
+    setImagePreviews([])
     setGifUrl(null)
     if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  const removeImageAtIndex = (index) => {
+    setImageFiles(prev => prev.filter((_, idx) => idx !== index))
+    setImagePreviews(prev => prev.filter((_, idx) => idx !== index))
+    if (fileInputRef.current && imageFiles.length <= 1) {
+      fileInputRef.current.value = ''
+    }
   }
 
   const clearYoutube = () => {
@@ -257,7 +285,7 @@ export default function ComposeModal({ isOpen, onClose, onSuccess }) {
   }
 
   const handlePost = async () => {
-    if (!content.trim() && !imagePreview && !youtubeData) return
+    if (!content.trim() && !imagePreviews.length && !gifUrl && !youtubeData) return
     if (!user) return
     setUploading(true)
 
@@ -265,19 +293,28 @@ export default function ComposeModal({ isOpen, onClose, onSuccess }) {
     const senderUsername = user?.user_metadata?.username
 
     let image_url = null
+    let image_urls = []
 
     try {
-      if (imageFile) {
-        const { file: uploadImage, mimeType } = await compressImageForUpload(imageFile, DEFAULT_IMAGE_UPLOAD_OPTIONS)
-        const fileName = `${user.id}-${Date.now()}.${getUploadExtension(uploadImage, mimeType)}`
-        const { error } = await supabase.storage
-          .from('post-images')
-          .upload(fileName, uploadImage, { contentType: mimeType })
-        if (error) throw error
-        const { data } = supabase.storage.from('post-images').getPublicUrl(fileName)
-        image_url = data.publicUrl
+      if (imageFiles.length) {
+        const uploadedUrls = []
+
+        for (const [index, imageFile] of imageFiles.entries()) {
+          const { file: uploadImage, mimeType } = await compressImageForUpload(imageFile, DEFAULT_IMAGE_UPLOAD_OPTIONS)
+          const fileName = `${user.id}-${Date.now()}-${index}.${getUploadExtension(uploadImage, mimeType)}`
+          const { error } = await supabase.storage
+            .from('post-images')
+            .upload(fileName, uploadImage, { contentType: mimeType })
+          if (error) throw error
+          const { data } = supabase.storage.from('post-images').getPublicUrl(fileName)
+          uploadedUrls.push(data.publicUrl)
+        }
+
+        image_urls = uploadedUrls
+        image_url = uploadedUrls[0] || null
       } else if (gifUrl) {
         image_url = gifUrl
+        image_urls = [gifUrl]
       }
 
       const res = await fetch(`${API_URL}/posts`, {
@@ -288,6 +325,7 @@ export default function ComposeModal({ isOpen, onClose, onSuccess }) {
           username: senderUsername,
           user_id: user.id,
           image_url,
+          image_urls,
           mentions: mentions.map(m => m.user_id),
           youtube_data: youtubeData
         })
@@ -299,7 +337,7 @@ export default function ComposeModal({ isOpen, onClose, onSuccess }) {
       }
 
       setContent('')
-      clearImage()
+      clearImages()
       setMentions([])
       setYoutubeData(null)
       closeModal()
@@ -392,9 +430,9 @@ export default function ComposeModal({ isOpen, onClose, onSuccess }) {
             <span className="material-symbols-outlined filled">close</span>
           </button>
           <button
-            className={`py-2 px-6 bg-primary text-white border-none rounded-full text-[0.9rem] font-bold transition-all ${((!content.trim() && !imagePreview && !youtubeData) || uploading) ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'cursor-pointer hover:bg-primary-hover active:scale-95'}`}
+            className={`py-2 px-6 bg-primary text-white border-none rounded-full text-[0.9rem] font-bold transition-all ${((!content.trim() && !imagePreviews.length && !gifUrl && !youtubeData) || uploading) ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'cursor-pointer hover:bg-primary-hover active:scale-95'}`}
             onClick={handlePost}
-            disabled={(!content.trim() && !imagePreview && !youtubeData) || uploading}
+            disabled={(!content.trim() && !imagePreviews.length && !gifUrl && !youtubeData) || uploading}
           >
             Post
           </button>
@@ -438,12 +476,16 @@ export default function ComposeModal({ isOpen, onClose, onSuccess }) {
       )}
 
       {/* Image Preview */}
-      {imagePreview && (
-        <div className="relative mt-2.5 inline-block w-full">
-          <img src={imagePreview} className="max-w-full max-h-[300px] rounded-xl border border-border-dark block" alt="preview" />
-          <button className="absolute top-2 right-2 bg-black/70 border-none rounded-full w-7 h-7 cursor-pointer text-white flex items-center justify-center hover:bg-black transition-colors" onClick={clearImage}>
-            <span className="material-symbols-outlined filled">close</span>
-          </button>
+      {imagePreviews.length > 0 && (
+        <div className="grid grid-cols-2 gap-2 mt-2.5 w-full">
+          {imagePreviews.map((preview, index) => (
+            <div key={preview.id || index} className="relative rounded-xl overflow-hidden border border-border-dark bg-black/10">
+              <img src={preview.src} className="w-full h-[180px] object-cover block" alt="preview" />
+              <button className="absolute top-2 right-2 bg-black/70 border-none rounded-full w-7 h-7 cursor-pointer text-white flex items-center justify-center hover:bg-black transition-colors" onClick={() => removeImageAtIndex(index)}>
+                <span className="material-symbols-outlined filled">close</span>
+              </button>
+            </div>
+          ))}
         </div>
       )}
 
@@ -477,6 +519,7 @@ export default function ComposeModal({ isOpen, onClose, onSuccess }) {
               ref={fileInputRef}
               type="file"
               accept="image/*"
+              multiple
               className="hidden"
               onChange={handleImageSelect}
             />
@@ -501,9 +544,9 @@ export default function ComposeModal({ isOpen, onClose, onSuccess }) {
               {content.length}/280
             </span>
             <button
-              className={`py-2 px-7 bg-primary text-white border-none rounded-[20px] text-[0.95rem] font-bold transition-all ${((!content.trim() && !imagePreview && !youtubeData) || uploading) ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'cursor-pointer hover:bg-primary-hover active:scale-95'}`}
+              className={`py-2 px-7 bg-primary text-white border-none rounded-[20px] text-[0.95rem] font-bold transition-all ${((!content.trim() && !imagePreviews.length && !gifUrl && !youtubeData) || uploading) ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'cursor-pointer hover:bg-primary-hover active:scale-95'}`}
               onClick={handlePost}
-              disabled={(!content.trim() && !imagePreview && !youtubeData) || uploading}
+              disabled={(!content.trim() && !imagePreviews.length && !gifUrl && !youtubeData) || uploading}
             >
               Post
             </button>
@@ -520,6 +563,7 @@ export default function ComposeModal({ isOpen, onClose, onSuccess }) {
           ref={fileInputRef}
           type="file"
           accept="image/*"
+          multiple
           className="hidden"
           onChange={handleImageSelect}
         />

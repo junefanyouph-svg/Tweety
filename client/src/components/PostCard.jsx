@@ -13,6 +13,7 @@ import { formatDate } from '../utils/formatDate'
 import { DEFAULT_IMAGE_UPLOAD_OPTIONS, compressImageForUpload, getUploadExtension } from '../utils/imageUpload'
 import { removeCachedMedia } from '../utils/mediaCache'
 import CachedImage from './CachedImage'
+import { getPostImageUrls } from '../utils/postMedia'
 
 function escapeRegExp(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -146,6 +147,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
   const fetchFnRef = useRef({ fetchLikes: null, fetchComments: null })
   const commentsRef = useRef([])
   const closeCommentsTimerRef = useRef(null)
+  const postImageUrls = getPostImageUrls(post)
 
   fetchFnRef.current.fetchLikes = async () => {
     const { data } = await supabase.from('likes').select('*').eq('post_id', post.id)
@@ -675,6 +677,16 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
   }
 
   const handleCopyLink = () => { navigator.clipboard.writeText(`${window.location.origin}/post/${post.id}`); setToast(true); setTimeout(() => setToast(false), 2000) }
+  const openPostMediaGallery = (initialIndex = 0) => {
+    navigate(`/post/${post.id}/media`, {
+      state: {
+        images: postImageUrls,
+        initialIndex,
+        from: window.location.pathname,
+        fromLabel: 'Back'
+      }
+    })
+  }
 
   const renderCommentThread = (comment, depth = 0, isLast = false) => {
     const replies = comments.filter(c => c.parent_id === comment.id);
@@ -899,9 +911,50 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
           </div>
         </div>
         <div className="text-base leading-relaxed text-text-main mb-1">{renderContent(post.content, navigate, highlightQuery)}{post.edited && <span className="text-text-dim text-[0.72rem] ml-1.5 italic">(edited)</span>}</div>
-        {post.image_url && (
+        {postImageUrls.length === 1 && (
           <div className="mt-3 overflow-hidden max-h-[500px] flex justify-center bg-black/5 flex justify-center">
-            <CachedImage src={post.image_url} fallbackSrc={post.image_url} className="max-w-full max-h-[500px] w-auto h-auto object-contain cursor-pointer" alt="" onClick={(e) => { e.stopPropagation(); setViewingImage(post.image_url) }} />
+            <CachedImage src={postImageUrls[0]} fallbackSrc={postImageUrls[0]} className="max-w-full max-h-[500px] w-auto h-auto object-contain cursor-pointer" alt="" onClick={(e) => { e.stopPropagation(); setViewingImage(postImageUrls[0]) }} />
+          </div>
+        )}
+        {postImageUrls.length === 2 && (
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            {postImageUrls.map((imageUrl, index) => (
+              <div key={imageUrl} className="overflow-hidden rounded-2xl bg-black/5 h-[260px]">
+                <CachedImage src={imageUrl} fallbackSrc={imageUrl} className="w-full h-full object-cover cursor-pointer" alt="" onClick={(e) => { e.stopPropagation(); openPostMediaGallery(index) }} />
+              </div>
+            ))}
+          </div>
+        )}
+        {postImageUrls.length === 3 && (
+          <div className="mt-3 grid grid-cols-[1.15fr_0.85fr] gap-2 h-[360px]">
+            <div className="overflow-hidden rounded-2xl bg-black/5 h-full">
+              <CachedImage src={postImageUrls[0]} fallbackSrc={postImageUrls[0]} className="w-full h-full object-cover cursor-pointer" alt="" onClick={(e) => { e.stopPropagation(); openPostMediaGallery(0) }} />
+            </div>
+            <div className="grid grid-rows-2 gap-2 h-full">
+              {postImageUrls.slice(1).map((imageUrl, index) => (
+                <div key={imageUrl} className="overflow-hidden rounded-2xl bg-black/5 h-full">
+                  <CachedImage src={imageUrl} fallbackSrc={imageUrl} className="w-full h-full object-cover cursor-pointer" alt="" onClick={(e) => { e.stopPropagation(); openPostMediaGallery(index + 1) }} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {postImageUrls.length >= 4 && (
+          <div className="mt-3 grid grid-cols-[1.15fr_0.85fr] gap-2 h-[360px]">
+            <div className="overflow-hidden rounded-2xl bg-black/5 h-full">
+              <CachedImage src={postImageUrls[0]} fallbackSrc={postImageUrls[0]} className="w-full h-full object-cover cursor-pointer" alt="" onClick={(e) => { e.stopPropagation(); openPostMediaGallery(0) }} />
+            </div>
+            <div className="grid grid-rows-2 gap-2 h-full">
+              <div className="overflow-hidden rounded-2xl bg-black/5 h-full">
+                <CachedImage src={postImageUrls[1]} fallbackSrc={postImageUrls[1]} className="w-full h-full object-cover cursor-pointer" alt="" onClick={(e) => { e.stopPropagation(); openPostMediaGallery(1) }} />
+              </div>
+              <button className="relative overflow-hidden rounded-2xl bg-black/40 h-full border-none p-0 cursor-pointer" onClick={(e) => { e.stopPropagation(); openPostMediaGallery(2) }}>
+                <CachedImage src={postImageUrls[2]} fallbackSrc={postImageUrls[2]} className="w-full h-full object-cover blur-[2px] scale-105" alt="" />
+                <div className="absolute inset-0 bg-black/35 flex items-center justify-center text-white text-[2rem] font-bold">
+                  +{postImageUrls.length - 2}
+                </div>
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -1001,7 +1054,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
             setIsDeletingPost(true)
             try {
               await removeCachedMedia([
-                post.image_url,
+                ...postImageUrls,
                 ...commentsRef.current.map(comment => comment.image_url)
               ])
               await onDelete(post.id)

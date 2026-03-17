@@ -58,10 +58,13 @@ router.get('/', async (req, res) => {
 
 // POST a new post
 router.post('/', async (req, res) => {
-  const { content, username, user_id, image_url, mentions, youtube_data } = req.body
+  const { content, username, user_id, image_url, image_urls, mentions, youtube_data } = req.body
 
   // Build insert object - only include youtube_data if provided
   const insertData = { content, username, user_id, image_url }
+  if (Array.isArray(image_urls) && image_urls.length > 0) {
+    insertData.image_urls = image_urls
+  }
   if (youtube_data) {
     insertData.youtube_data = youtube_data
   }
@@ -115,12 +118,17 @@ router.post('/', async (req, res) => {
 
   if (error) {
     console.error('Database error creating post:', error)
-    // If youtube_data column doesn't exist, try without it
-    if (error.message?.includes('youtube_data')) {
-      delete insertData.youtube_data
+    // Retry without columns that may not exist yet.
+    if (error.message?.includes('youtube_data') || error.message?.includes('image_urls')) {
+      if (error.message?.includes('youtube_data')) {
+        delete insertData.youtube_data
+      }
+      if (error.message?.includes('image_urls')) {
+        delete insertData.image_urls
+      }
       const { data: retryData, error: retryError } = await supabase
         .from('posts')
-        .insert([{ content, username, user_id, image_url }])
+        .insert([insertData])
         .select('*, profiles(display_name, avatar_url)')
 
       if (retryError) {
@@ -191,7 +199,7 @@ router.delete('/:id', async (req, res) => {
 
   const { data: post, error: postFetchError } = await supabase
     .from('posts')
-    .select('id, image_url')
+    .select('id, image_url, image_urls')
     .eq('id', id)
     .single()
 
@@ -205,7 +213,9 @@ router.delete('/:id', async (req, res) => {
   if (commentsFetchError) return res.status(500).json({ error: commentsFetchError.message })
 
   const mediaToQueue = [
-    post?.image_url ? { mediaUrl: post.image_url, sourceType: 'post', sourceId: post.id } : null,
+    ...[...(post?.image_urls || []), post?.image_url]
+      .filter(Boolean)
+      .map(mediaUrl => ({ mediaUrl, sourceType: 'post', sourceId: post.id })),
     ...(comments || [])
       .filter(comment => comment.image_url)
       .map(comment => ({
