@@ -146,19 +146,19 @@ function ExpandedImageViewer({ initialImage, images, onClose }) {
 
             {currentIndex > 0 && (
               <button 
-                className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center cursor-pointer border-none transition-colors z-50"
+                className="fixed left-3 md:left-8 top-1/2 -translate-y-1/2 w-10 h-10 md:w-14 md:h-14 rounded-full bg-black/50 hover:bg-black/70 border border-white/20 text-white flex items-center justify-center cursor-pointer backdrop-blur-md transition-colors z-[100000] shadow-xl"
                 onClick={(e) => { e.stopPropagation(); scrollTo(currentIndex - 1) }}
               >
-                <span className="material-symbols-outlined filled text-[1.2rem]">arrow_back_ios_new</span>
+                <span className="material-symbols-outlined filled text-[1.1rem] md:text-[1.5rem] relative right-[1px]">arrow_back_ios_new</span>
               </button>
             )}
             
             {currentIndex < images.length - 1 && (
               <button 
-                className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center cursor-pointer border-none transition-colors z-50"
+                className="fixed right-3 md:right-8 top-1/2 -translate-y-1/2 w-10 h-10 md:w-14 md:h-14 rounded-full bg-black/50 hover:bg-black/70 border border-white/20 text-white flex items-center justify-center cursor-pointer backdrop-blur-md transition-colors z-[100000] shadow-xl"
                 onClick={(e) => { e.stopPropagation(); scrollTo(currentIndex + 1) }}
               >
-                <span className="material-symbols-outlined filled text-[1.2rem]">arrow_forward_ios</span>
+                <span className="material-symbols-outlined filled text-[1.1rem] md:text-[1.5rem] relative left-[1px]">arrow_forward_ios</span>
               </button>
             )}
 
@@ -1039,19 +1039,19 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
             {/* Navigation Arrows */}
             {currentImageIndex > 0 && (
               <button 
-                className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center cursor-pointer border-none opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center cursor-pointer border-none opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-10"
                 onClick={(e) => scrollCarousel(e, 'left')}
               >
-                <span className="material-symbols-outlined filled text-sm">arrow_back_ios_new</span>
+                <span className="material-symbols-outlined filled text-sm relative right-[1px]">arrow_back_ios_new</span>
               </button>
             )}
             
             {currentImageIndex < postImageUrls.length - 1 && (
               <button 
-                className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center cursor-pointer border-none opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center cursor-pointer border-none opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-10"
                 onClick={(e) => scrollCarousel(e, 'right')}
               >
-                <span className="material-symbols-outlined filled text-sm">arrow_forward_ios</span>
+                <span className="material-symbols-outlined filled text-sm relative left-[1px]">arrow_forward_ios</span>
               </button>
             )}
 
