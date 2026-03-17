@@ -479,8 +479,8 @@ export default function ComposeModal({ isOpen, onClose, onSuccess }) {
       {imagePreviews.length > 0 && (
         <div className="grid grid-cols-2 gap-2 mt-2.5 w-full">
           {imagePreviews.map((preview, index) => (
-            <div key={preview.id || index} className="relative rounded-xl overflow-hidden border border-border-dark bg-black/10 h-[160px] flex items-center justify-center">
-              <img src={preview.src} className="max-w-full max-h-full object-contain block" alt="preview" />
+            <div key={preview.id || index} className="relative rounded-xl overflow-hidden border border-border-dark bg-black/10">
+              <img src={preview.src} className="w-full h-[180px] object-cover block" alt="preview" />
               <button className="absolute top-2 right-2 bg-black/70 border-none rounded-full w-7 h-7 cursor-pointer text-white flex items-center justify-center hover:bg-black transition-colors" onClick={() => removeImageAtIndex(index)}>
                 <span className="material-symbols-outlined filled">close</span>
               </button>
