@@ -11,6 +11,8 @@ import { broadcastLike, broadcastComment, broadcastCommentLike } from '../utils/
 import { API_URL } from '../utils/apiUrl'
 import { formatDate } from '../utils/formatDate'
 import { DEFAULT_IMAGE_UPLOAD_OPTIONS, compressImageForUpload, getUploadExtension } from '../utils/imageUpload'
+import { removeCachedMedia } from '../utils/mediaCache'
+import CachedImage from './CachedImage'
 
 function escapeRegExp(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -464,6 +466,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
   const handleDeleteComment = async (commentId) => {
     setIsDeletingComment(true)
     try {
+      const targetComment = commentsRef.current.find(comment => comment.id === commentId)
       const res = await fetch(`${API_URL}/replies/${commentId}`, { method: 'DELETE' })
 
       if (!res.ok) {
@@ -482,6 +485,9 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
 
       setDeletingCommentId(null)
       setDeleteDialog(null)
+      if (targetComment?.image_url) {
+        await removeCachedMedia(targetComment.image_url)
+      }
       fetchFnRef.current.fetchComments()
     } finally {
       setIsDeletingComment(false)
@@ -710,7 +716,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
                 {comment.edited && <span className="text-text-dim text-[0.7rem] ml-1.5 italic">(edited)</span>}
               </div>
             )}
-            {comment.image_url && <img src={comment.image_url} className="mt-2 max-w-[60%] max-h-[150px] object-contain rounded-lg cursor-pointer" alt="" onClick={() => setViewingImage(comment.image_url)} />}
+            {comment.image_url && <CachedImage src={comment.image_url} fallbackSrc={comment.image_url} className="mt-2 max-w-[60%] max-h-[150px] object-contain rounded-lg cursor-pointer" alt="" onClick={() => setViewingImage(comment.image_url)} />}
             <div className="flex gap-4 mt-2 items-center">
               <button className={`bg-none border-none cursor-pointer text-[0.8rem] flex items-center gap-1 transition-colors ${comment.comment_likes?.some(l => l.user_id === user?.id) ? 'text-[#e0245e]' : 'text-text-dim'} ${animatingCommentId === comment.id ? 'heart-bounce' : ''}`} onClick={() => handleCommentLike(comment)}>
                 <span className={`material-symbols-outlined text-[1.1rem] ${comment.comment_likes?.some(l => l.user_id === user?.id) ? 'filled text-[#e0245e]' : ''}`}>favorite</span> <span className={comment.comment_likes?.some(l => l.user_id === user?.id) ? 'font-bold' : 'font-normal'}>{comment.comment_likes?.length || 0}</span>
@@ -870,7 +876,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
         <div className="text-base leading-relaxed text-text-main mb-1">{renderContent(post.content, navigate, highlightQuery)}{post.edited && <span className="text-text-dim text-[0.72rem] ml-1.5 italic">(edited)</span>}</div>
         {post.image_url && (
           <div className="mt-3 overflow-hidden max-h-[500px] flex justify-center bg-black/5 flex justify-center">
-            <img src={post.image_url} className="max-w-full max-h-[500px] w-auto h-auto object-contain cursor-pointer" alt="" onClick={(e) => { e.stopPropagation(); setViewingImage(post.image_url) }} />
+            <CachedImage src={post.image_url} fallbackSrc={post.image_url} className="max-w-full max-h-[500px] w-auto h-auto object-contain cursor-pointer" alt="" onClick={(e) => { e.stopPropagation(); setViewingImage(post.image_url) }} />
           </div>
         )}
       </div>
@@ -953,7 +959,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
             <button className="absolute -top-10 right-0 text-white cursor-pointer bg-none border-none text-xl hover:text-primary transition-colors" onClick={() => setViewingImage(null)}>
               <span className="material-symbols-outlined filled">close</span>
             </button>
-            <img src={viewingImage} className="max-w-[90vw] max-h-[85vh] rounded-lg shadow-2xl" alt="" />
+            <CachedImage src={viewingImage} fallbackSrc={viewingImage} className="max-w-[90vw] max-h-[85vh] rounded-lg shadow-2xl" alt="" />
           </div>
         </div>,
         document.body
@@ -969,6 +975,10 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
           onConfirm={async () => { 
             setIsDeletingPost(true)
             try {
+              await removeCachedMedia([
+                post.image_url,
+                ...commentsRef.current.map(comment => comment.image_url)
+              ])
               await onDelete(post.id)
             } finally {
               setIsDeletingPost(false)
