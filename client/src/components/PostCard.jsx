@@ -123,9 +123,17 @@ function ExpandedImageViewer({ initialImage, images, onClose }) {
     }
   }
 
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [onClose])
+
   return createPortal(
     <div className="fixed inset-0 bg-black/85 z-[99999] flex items-center justify-center backdrop-blur-md" onClick={onClose}>
-      <div className="relative animate-[popIn_0.3s_ease-out] flex flex-col items-center group w-full h-full justify-center" onClick={(e) => e.stopPropagation()}>
+      <div className="relative animate-[popIn_0.3s_ease-out] flex flex-col items-center group w-full h-full justify-center">
         <button className="absolute top-4 right-4 md:top-8 md:right-8 text-white cursor-pointer bg-black/50 hover:bg-black/80 rounded-full w-10 h-10 flex items-center justify-center border-none text-xl hover:text-primary transition-colors z-[100000]" onClick={onClose}>
           <span className="material-symbols-outlined filled">close</span>
         </button>
@@ -139,7 +147,7 @@ function ExpandedImageViewer({ initialImage, images, onClose }) {
             >
               {images.map((img, idx) => (
                 <div key={idx} className="carousel-slide relative h-full w-full shrink-0 flex items-center justify-center p-4 md:p-12 pb-[100px]">
-                  <CachedImage src={img} fallbackSrc={img} className="max-w-full max-h-full rounded-lg shadow-2xl object-contain cursor-default" alt="" />
+                  <CachedImage src={img} fallbackSrc={img} className="max-w-full max-h-full rounded-lg shadow-2xl object-contain cursor-default" alt="" onClick={(e) => e.stopPropagation()} />
                 </div>
               ))}
             </div>
@@ -175,8 +183,8 @@ function ExpandedImageViewer({ initialImage, images, onClose }) {
             </div>
           </>
         ) : (
-          <div className="flex items-center justify-center p-4">
-             <CachedImage src={initialImage} fallbackSrc={initialImage} className="max-w-[100vw] lg:max-w-[90vw] max-h-[85vh] rounded-lg shadow-2xl object-contain cursor-default" alt="" />
+          <div className="flex items-center justify-center p-4 w-full h-full">
+             <CachedImage src={initialImage} fallbackSrc={initialImage} className="max-w-[100vw] lg:max-w-[90vw] max-h-[85vh] rounded-lg shadow-2xl object-contain cursor-default" alt="" onClick={(e) => e.stopPropagation()} />
           </div>
         )}
       </div>
