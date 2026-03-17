@@ -136,18 +136,16 @@ function ExpandedImageViewer({ initialImage, images, onClose }) {
     isHistoryPushed.current = true
 
     const handlePopState = (e) => {
-      // If we see our state has been popped (standard BACK button press)
-      onCloseRef.current(true)
-      isHistoryPushed.current = false
+      // If our state is popped (standard BACK button press or our manual back())
+      if (isHistoryPushed.current) {
+        isHistoryPushed.current = false
+        onClose(true)
+      }
     }
 
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
-        onCloseRef.current(false)
-        if (isHistoryPushed.current) {
-          window.history.back()
-          isHistoryPushed.current = false
-        }
+        window.history.back()
       }
     }
 
@@ -158,18 +156,19 @@ function ExpandedImageViewer({ initialImage, images, onClose }) {
       window.removeEventListener('popstate', handlePopState)
       window.removeEventListener('keydown', handleKeyDown)
       // Cleanup: if component is unmounted by parent (not BACK button), pop the history state
-      if (isHistoryPushed.current) {
+      // This keeps history clean if they navigate away while modal is open
+      if (isHistoryPushed.current && window.history.state?.imageViewerOpen) {
         window.history.back()
         isHistoryPushed.current = false
       }
     }
-  }, [])
+  }, [onClose])
 
 
   return createPortal(
     <div 
       className="fixed inset-0 bg-black/90 z-[99999] flex items-center justify-center backdrop-blur-md" 
-      onClick={() => onClose(false)}
+      onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.history.back(); }}
     >
 
 
@@ -181,7 +180,7 @@ function ExpandedImageViewer({ initialImage, images, onClose }) {
       </button>
 
       <div className="relative animate-[popIn_0.3s_ease-out] flex flex-col items-center group w-full h-full justify-center">
-        <div className="w-full h-full flex flex-col items-center justify-center" onClick={() => onClose(false)}>
+        <div className="w-full h-full flex flex-col items-center justify-center p-4" onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.history.back(); }}>
 
           {isMultiple ? (
           <>
@@ -191,7 +190,7 @@ function ExpandedImageViewer({ initialImage, images, onClose }) {
               onScroll={handleScroll}
             >
               {images.map((img, idx) => (
-                <div key={idx} className="carousel-slide relative h-full w-full shrink-0 flex items-center justify-center p-4 md:p-12 pb-[100px]" onClick={() => onClose(false)}>
+                <div key={idx} className="carousel-slide relative h-full w-full shrink-0 flex items-center justify-center p-4 md:p-12 pb-[100px]" onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.history.back(); }}>
                   <CachedImage src={img} fallbackSrc={img} className="max-w-full max-h-full rounded-lg shadow-2xl object-contain cursor-default" alt="" onClick={(e) => e.stopPropagation()} />
                 </div>
               ))}
@@ -229,7 +228,7 @@ function ExpandedImageViewer({ initialImage, images, onClose }) {
             </div>
           </>
         ) : (
-          <div className="flex items-center justify-center p-4 w-full h-full" onClick={() => onClose(false)}>
+          <div className="flex items-center justify-center p-4 w-full h-full" onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.history.back(); }}>
              <CachedImage src={initialImage} fallbackSrc={initialImage} className="max-w-[100vw] lg:max-w-[90vw] max-h-[85vh] rounded-lg shadow-2xl object-contain cursor-default" alt="" onClick={(e) => e.stopPropagation()} />
           </div>
         )}
@@ -255,6 +254,9 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
   const [hiddenComments, setHiddenComments] = useState([])
   const [deletingCommentId, setDeletingCommentId] = useState(null)
   const [viewingImage, setViewingImage] = useState(null)
+  const handleCloseViewer = React.useCallback(() => {
+    setViewingImage(null)
+  }, [])
   const [commentSending, setCommentSending] = useState(false)
   const [replyingTo, setReplyingTo] = useState(null)
   const [replyContent, setReplyContent] = useState('')
@@ -1200,12 +1202,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
         <ExpandedImageViewer
           initialImage={viewingImage}
           images={postImageUrls}
-          onClose={(fromPopState) => {
-            setViewingImage(null)
-            if (fromPopState !== true) {
-              window.history.back()
-            }
-          }}
+          onClose={handleCloseViewer}
         />
       )}
       {showDeleteModal && (
