@@ -39,6 +39,11 @@ self.addEventListener('fetch', (event) => {
 
   // Skip cross-origin requests (Supabase API, fonts CDN, etc.)
   if (!request.url.startsWith(self.location.origin)) return
+  const requestUrl = new URL(request.url)
+  if (requestUrl.pathname === '/version.json') {
+    event.respondWith(fetch(request, { cache: 'no-store' }))
+    return
+  }
 
   // For navigation requests (HTML pages) – network first, fall back to cache
   if (request.mode === 'navigate') {

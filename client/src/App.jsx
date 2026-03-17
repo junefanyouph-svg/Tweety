@@ -16,6 +16,7 @@ import DirectMessages from './pages/DirectMessages'
 import ChatPage from './pages/ChatPage'
 import Layout from './components/Layout'
 import { interactionsChannel } from './utils/interactionsChannel'
+import { startUpdateNotifier } from './utils/updateNotifier'
 
 function App() {
   const [session, setSession] = useState(null)
@@ -40,6 +41,13 @@ function App() {
 
     return () => {
       subscription.unsubscribe()
+    }
+  }, [])
+
+  useEffect(() => {
+    const stopUpdateNotifier = startUpdateNotifier()
+    return () => {
+      stopUpdateNotifier()
     }
   }, [])
 
