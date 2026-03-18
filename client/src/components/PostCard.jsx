@@ -152,9 +152,20 @@ function ExpandedImageViewer({ initialImage, images, onClose }) {
     window.addEventListener('popstate', handlePopState)
     window.addEventListener('keydown', handleKeyDown)
 
+    // Disable background scroll
+    const prevBodyOverflow = document.body.style.overflow
+    const prevHtmlOverflow = document.documentElement.style.overflow
+    document.body.style.overflow = 'hidden'
+    document.documentElement.style.overflow = 'hidden'
+
     return () => {
       window.removeEventListener('popstate', handlePopState)
       window.removeEventListener('keydown', handleKeyDown)
+
+      // Restore background scroll
+      document.body.style.overflow = prevBodyOverflow
+      document.documentElement.style.overflow = prevHtmlOverflow
+
       // Cleanup: if component is unmounted by parent (not BACK button), pop the history state
       // This keeps history clean if they navigate away while modal is open
       if (isHistoryPushed.current && window.history.state?.imageViewerOpen) {
