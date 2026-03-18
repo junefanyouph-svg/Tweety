@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { getCachedProfile, setCachedProfile } from '../utils/profileCache'
+import { useScrollDirection } from '../utils/useScrollDirection'
 
 export default function BottomNav() {
   const [user, setUser] = useState(null)
@@ -15,6 +16,9 @@ export default function BottomNav() {
   })
   const navigate = useNavigate()
   const location = useLocation()
+  
+  const scrollDirection = useScrollDirection()
+  const isHidden = scrollDirection === 'down'
 
   const [stats, setStats] = useState({ followers: 0, following: 0 })
 
@@ -285,7 +289,7 @@ export default function BottomNav() {
         </>
       )}
 
-      <div className="fixed bottom-0 left-0 right-0 h-[calc(64px+env(safe-area-inset-bottom))] bg-bg-dark border-t border-border-dark flex items-start justify-around z-[100] px-4 md:hidden pb-[env(safe-area-inset-bottom)] pt-2">
+      <div className={`fixed bottom-0 left-0 right-0 h-[calc(64px+env(safe-area-inset-bottom))] bg-bg-dark border-t border-border-dark flex items-start justify-around z-[100] px-4 md:hidden pb-[env(safe-area-inset-bottom)] pt-2 transition-transform duration-300 ${isHidden ? 'translate-y-full' : 'translate-y-0'}`}>
         {navItems.map(item => (
           <button
             key={item.path}
