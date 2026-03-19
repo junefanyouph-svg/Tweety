@@ -173,6 +173,14 @@ export default function ChatPage() {
         }
     }, [messages])
 
+    // Initial scroll to bottom when finished loading
+    useEffect(() => {
+        if (!loading) {
+            scrollToBottom('auto')
+        }
+    }, [loading])
+
+
     // Track scroll position to show/hide scroll-to-bottom button
     useEffect(() => {
         const el = messageListRef.current
@@ -600,7 +608,7 @@ export default function ChatPage() {
                     onClick={() => scrollToBottom('smooth')}
                     style={{
                         position: 'absolute',
-                        bottom: '150px',
+                        bottom: '100px',
                         left: '50%',
                         marginLeft: '-20px',
                         width: '40px',
