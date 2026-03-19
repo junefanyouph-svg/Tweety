@@ -485,13 +485,13 @@ export default function ChatPage() {
                     transform-origin: bottom left;
                 }
                 @keyframes scroll-btn-in {
-                    0% { transform: translate(-50%, 0) scale(0); opacity: 0; }
-                    80% { transform: translate(-50%, 0) scale(1.1); }
-                    100% { transform: translate(-50%, 0) scale(1); opacity: 1; }
+                    0% { transform: scale(0); opacity: 0; }
+                    80% { transform: scale(1.1); }
+                    100% { transform: scale(1); opacity: 1; }
                 }
                 @keyframes scroll-btn-out {
-                    0% { transform: translate(-50%, 0) scale(1); opacity: 1; }
-                    100% { transform: translate(-50%, 0) scale(0); opacity: 0; }
+                    0% { transform: scale(1); opacity: 1; }
+                    100% { transform: scale(0); opacity: 0; }
                 }
             `}</style>
             <header style={styles.header}>
@@ -592,36 +592,39 @@ export default function ChatPage() {
                     ))
                 )}
                 <div ref={messagesEndRef} />
-                {showScrollBtn && (
-                    <button
-                        onClick={() => scrollToBottom('smooth')}
-                        style={{
-                            position: 'sticky',
-                            bottom: '16px',
-                            left: '50%',
-                            transform: 'translate(-50%, 0)',
-                            width: '40px',
-                            height: '40px',
-                            borderRadius: '50%',
-                            backgroundColor: 'var(--color-surface)',
-                            border: '1px solid var(--color-border-dark)',
-                            color: 'var(--color-primary)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            cursor: 'pointer',
-                            zIndex: 100,
-                            boxShadow: '0 4px 16px rgba(0,0,0,0.35)',
-                            animation: isScrollBtnClosing
-                                ? 'scroll-btn-out 0.2s ease-in forwards'
-                                : 'scroll-btn-in 0.2s ease-out forwards',
-                        }}
-                        aria-label="Scroll to bottom"
-                    >
-                        <span className="material-symbols-outlined filled" style={{ fontSize: '1.3rem' }}>keyboard_arrow_down</span>
-                    </button>
-                )}
             </div>
+
+            {/* Scroll-to-bottom button — positioned outside message list to avoid adding scroll height */}
+            {showScrollBtn && (
+                <button
+                    onClick={() => scrollToBottom('smooth')}
+                    style={{
+                        position: 'absolute',
+                        bottom: '90px',
+                        left: '50%',
+                        marginLeft: '-20px',
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '50%',
+                        backgroundColor: 'var(--color-surface)',
+                        border: '1px solid var(--color-border-dark)',
+                        color: 'var(--color-primary)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        zIndex: 100,
+                        boxShadow: '0 4px 16px rgba(0,0,0,0.35)',
+                        padding: 0,
+                        animation: isScrollBtnClosing
+                            ? 'scroll-btn-out 0.2s ease-in forwards'
+                            : 'scroll-btn-in 0.2s ease-out forwards',
+                    }}
+                    aria-label="Scroll to bottom"
+                >
+                    <span className="material-symbols-outlined filled" style={{ fontSize: '1.3rem' }}>keyboard_arrow_down</span>
+                </button>
+            )}
 
             <form style={styles.inputArea} onSubmit={handleSend}>
                 <div style={styles.plusBtnContainer}>
