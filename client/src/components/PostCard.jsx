@@ -233,7 +233,7 @@ function ExpandedImageViewer({ initialImage, images, onClose }) {
                   className={`shrink-0 w-14 h-14 md:w-16 md:h-16 rounded-md overflow-hidden cursor-pointer transition-all duration-300 border-2 ${idx === currentIndex ? 'border-primary opacity-100 scale-110' : 'border-transparent opacity-50 hover:opacity-100'}`}
                   onClick={(e) => { e.stopPropagation(); scrollTo(idx) }}
                 >
-                  <CachedImage src={img} fallbackSrc={img} className="w-full h-full object-cover bg-black" alt="" onClick={(e) => e.stopPropagation()} />
+                  <CachedImage src={img} fallbackSrc={img} className="w-full h-full object-cover bg-black pointer-events-none" alt="" />
                 </div>
               ))}
             </div>
