@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useLayoutEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { styles } from '../styles/Chat.styles'
@@ -38,6 +38,7 @@ export default function ChatPage() {
     const messageListRef = useRef(null)
     const [showScrollBtn, setShowScrollBtn] = useState(false)
     const [isScrollBtnClosing, setIsScrollBtnClosing] = useState(false)
+    const [isScrollReady, setIsScrollReady] = useState(false)
 
     useEffect(() => {
         if (input.trim() || mediaPreview) {
@@ -173,10 +174,12 @@ export default function ChatPage() {
         }
     }, [messages])
 
-    // Initial scroll to bottom when finished loading
-    useEffect(() => {
-        if (!loading) {
-            scrollToBottom('auto')
+    // Initial scroll to bottom BEFORE first paint to prevent flash
+    useLayoutEffect(() => {
+        if (!loading && messageListRef.current) {
+            const el = messageListRef.current
+            el.scrollTop = el.scrollHeight
+            setIsScrollReady(true)
         }
     }, [loading])
 
@@ -524,7 +527,7 @@ export default function ChatPage() {
                 </button>
             </header>
 
-            <div style={{ ...styles.messageList, position: 'relative' }} ref={messageListRef}>
+            <div style={{ ...styles.messageList, position: 'relative', opacity: (loading || isScrollReady) ? 1 : 0 }} ref={messageListRef}>
                 {loading && messages.length === 0 ? (
                     <div style={styles.loadingWrapper}>
                         <div style={styles.loadingBubbleRow}>
