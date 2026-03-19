@@ -35,6 +35,9 @@ export default function ChatPage() {
     const textareaRef = useRef(null)
     const fileInputRef = useRef(null)
     const messagesEndRef = useRef(null)
+    const messageListRef = useRef(null)
+    const [showScrollBtn, setShowScrollBtn] = useState(false)
+    const [isScrollBtnClosing, setIsScrollBtnClosing] = useState(false)
 
     useEffect(() => {
         if (input.trim() || mediaPreview) {
@@ -158,8 +161,42 @@ export default function ChatPage() {
     }, [userId])
 
     useEffect(() => {
-        scrollToBottom()
+        // Only auto-scroll if the user is near the bottom
+        const el = messageListRef.current
+        if (el) {
+            const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
+            if (distanceFromBottom < 150) {
+                scrollToBottom()
+            }
+        } else {
+            scrollToBottom()
+        }
     }, [messages])
+
+    // Track scroll position to show/hide scroll-to-bottom button
+    useEffect(() => {
+        const el = messageListRef.current
+        if (!el) return
+        const handleScroll = () => {
+            const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
+            if (distanceFromBottom > 200) {
+                if (!showScrollBtn && !isScrollBtnClosing) {
+                    setShowScrollBtn(true)
+                    setIsScrollBtnClosing(false)
+                }
+            } else {
+                if (showScrollBtn && !isScrollBtnClosing) {
+                    setIsScrollBtnClosing(true)
+                    setTimeout(() => {
+                        setShowScrollBtn(false)
+                        setIsScrollBtnClosing(false)
+                    }, 200)
+                }
+            }
+        }
+        el.addEventListener('scroll', handleScroll, { passive: true })
+        return () => el.removeEventListener('scroll', handleScroll)
+    }, [showScrollBtn, isScrollBtnClosing])
 
     // Auto-resize textarea
     useEffect(() => {
@@ -447,6 +484,15 @@ export default function ChatPage() {
                     animation: menu-pop-in 0.2s cubic-bezier(0.17, 0.67, 0.83, 0.67) forwards;
                     transform-origin: bottom left;
                 }
+                @keyframes scroll-btn-in {
+                    0% { transform: translate(-50%, 0) scale(0); opacity: 0; }
+                    80% { transform: translate(-50%, 0) scale(1.1); }
+                    100% { transform: translate(-50%, 0) scale(1); opacity: 1; }
+                }
+                @keyframes scroll-btn-out {
+                    0% { transform: translate(-50%, 0) scale(1); opacity: 1; }
+                    100% { transform: translate(-50%, 0) scale(0); opacity: 0; }
+                }
             `}</style>
             <header style={styles.header}>
                 <button style={styles.backBtn} onClick={() => navigate('/messages')}>
@@ -470,7 +516,7 @@ export default function ChatPage() {
                 </button>
             </header>
 
-            <div style={styles.messageList}>
+            <div style={{ ...styles.messageList, position: 'relative' }} ref={messageListRef}>
                 {loading && messages.length === 0 ? (
                     <div style={styles.loadingWrapper}>
                         <div style={styles.loadingBubbleRow}>
@@ -546,6 +592,35 @@ export default function ChatPage() {
                     ))
                 )}
                 <div ref={messagesEndRef} />
+                {showScrollBtn && (
+                    <button
+                        onClick={() => scrollToBottom('smooth')}
+                        style={{
+                            position: 'sticky',
+                            bottom: '16px',
+                            left: '50%',
+                            transform: 'translate(-50%, 0)',
+                            width: '40px',
+                            height: '40px',
+                            borderRadius: '50%',
+                            backgroundColor: 'var(--color-surface)',
+                            border: '1px solid var(--color-border-dark)',
+                            color: 'var(--color-primary)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            zIndex: 100,
+                            boxShadow: '0 4px 16px rgba(0,0,0,0.35)',
+                            animation: isScrollBtnClosing
+                                ? 'scroll-btn-out 0.2s ease-in forwards'
+                                : 'scroll-btn-in 0.2s ease-out forwards',
+                        }}
+                        aria-label="Scroll to bottom"
+                    >
+                        <span className="material-symbols-outlined filled" style={{ fontSize: '1.3rem' }}>keyboard_arrow_down</span>
+                    </button>
+                )}
             </div>
 
             <form style={styles.inputArea} onSubmit={handleSend}>
