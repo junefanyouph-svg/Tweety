@@ -600,7 +600,7 @@ export default function ChatPage() {
                     onClick={() => scrollToBottom('smooth')}
                     style={{
                         position: 'absolute',
-                        bottom: '90px',
+                        bottom: '150px',
                         left: '50%',
                         marginLeft: '-20px',
                         width: '40px',
@@ -622,7 +622,7 @@ export default function ChatPage() {
                     }}
                     aria-label="Scroll to bottom"
                 >
-                    <span className="material-symbols-outlined filled" style={{ fontSize: '1.3rem' }}>keyboard_arrow_down</span>
+                    <span className="material-symbols-outlined filled" style={{ fontSize: '1.3rem' }}>arrow_downward</span>
                 </button>
             )}
 

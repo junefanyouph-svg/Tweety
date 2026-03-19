@@ -2,8 +2,8 @@ export const styles = {
     container: { maxWidth: '620px', margin: '0 auto', padding: '0 12px', width: '100%', boxSizing: 'border-box' },
     header: { padding: '24px 0 16px', borderBottom: '1px solid var(--color-border-dark)', position: 'sticky', top: 0, backgroundColor: 'var(--color-bg-dark)', zIndex: 10, display: 'flex', alignItems: 'center', gap: '12px' },
     title: { fontSize: '1.3rem', fontWeight: 'bold', color: 'var(--color-text-main)' },
-    list: { paddingTop: '8px', paddingBottom: '32px' },
-    skeletonList: { paddingTop: '8px', paddingBottom: '32px' },
+    list: { paddingTop: '8px', paddingBottom: '0' },
+    skeletonList: { paddingTop: '8px', paddingBottom: '0' },
     skeletonRow: { display: 'flex', alignItems: 'center', gap: '12px', padding: '16px 0' },
     skeletonAvatar: {
         width: '48px',
