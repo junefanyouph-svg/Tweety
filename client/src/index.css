@@ -75,12 +75,22 @@ body {
     padding: 15px !important;
   }
 
-  [style*="width: '340px'"],
   [style*="width: 340"] {
     width: 90% !important;
     max-width: 340px !important;
   }
+
+  /* Hide scrollbar on mobile while keeping it scrollable */
+  html, body {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar {
+    display: none;
+  }
 }
+
 
 @keyframes heartPulse {
   0% {
