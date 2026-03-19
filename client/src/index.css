@@ -33,18 +33,15 @@ body {
   @apply flex flex-col;
 }
 
-::-webkit-scrollbar {
-  width: 6px;
+/* Global scrollbar hiding while maintaining scrollability */
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+*::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, and Opera */
 }
 
-::-webkit-scrollbar-track {
-  background: var(--color-bg-dark);
-}
-
-::-webkit-scrollbar-thumb {
-  background: #2a2d3a;
-  border-radius: 3px;
-}
 
 /* Desktop - show sidebar, hide bottom nav */
 .bottom-nav {
@@ -80,15 +77,7 @@ body {
     max-width: 340px !important;
   }
 
-  /* Hide scrollbar on mobile while keeping it scrollable */
-  html, body {
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
-  html::-webkit-scrollbar,
-  body::-webkit-scrollbar {
-    display: none;
-  }
+
 }
 
 
