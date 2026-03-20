@@ -809,27 +809,30 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
     }
   }, [])
 
-  // Close reaction picker on outside click
+  // Close reaction picker on outside click and scroll without blocking
   React.useEffect(() => {
     if (!showReactionPicker) return
-    const handleClickOutside = (e) => {
-      // If clicking inside the picker, do nothing
-      if (e.target.closest('.reaction-picker') || e.target.closest('.reaction-btn')) return
+    
+    const handleOutsideClick = (e) => {
+      // If clicking inside the reaction component, let it handle its own clicks
+      if (reactionBtnRef.current && reactionBtnRef.current.contains(e.target)) return
       closeReactionPicker()
     }
-    document.addEventListener('pointerdown', handleClickOutside)
-    return () => document.removeEventListener('pointerdown', handleClickOutside)
-  }, [showReactionPicker, closeReactionPicker])
-
-  // Mobile scroll lock when picker is open
-  React.useEffect(() => {
-    if (showReactionPicker && window.matchMedia('(max-width: 768px)').matches) {
-      document.body.style.overflow = 'hidden'
-      return () => {
-        document.body.style.overflow = ''
-      }
+    
+    const handleScroll = () => {
+      closeReactionPicker()
     }
-  }, [showReactionPicker])
+
+    document.addEventListener('mousedown', handleOutsideClick)
+    document.addEventListener('touchstart', handleOutsideClick)
+    window.addEventListener('scroll', handleScroll, true) // capturing true catches scroll on any scrollable container
+
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick)
+      document.removeEventListener('touchstart', handleOutsideClick)
+      window.removeEventListener('scroll', handleScroll, true)
+    }
+  }, [showReactionPicker, closeReactionPicker])
 
   const handleReaction = async (emoji = null) => {
     if (!user) return
@@ -1487,13 +1490,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
 
           {/* Reaction Picker Popup */}
           {showReactionPicker && (
-            <>
-              {/* Mobile Backdrop */}
-              <div 
-                className={`reaction-picker-backdrop ${closingReactionPicker ? 'closing' : ''}`}
-                onClick={(e) => { e.stopPropagation(); closeReactionPicker() }}
-              />
-              <div
+            <div
               className={`reaction-picker ${closingReactionPicker ? 'reaction-picker-closing' : ''}`}
               onMouseEnter={handleReactionPickerEnter}
               onMouseLeave={handleReactionPickerLeave}
@@ -1515,7 +1512,6 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
                 </button>
               ))}
             </div>
-            </>
           )}
         </div>
 
