@@ -790,4 +790,313 @@ html.light-mode {
     left: 0;
     transform: translateX(0);
   }
+}
+
+/* ─── Reactions Modal ─── */
+.reactions-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: reactionsBackdropIn 0.2s ease;
+}
+
+@keyframes reactionsBackdropIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.reactions-modal {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-dark);
+  border-radius: 20px;
+  width: 420px;
+  max-width: calc(100vw - 32px);
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+  animation: reactionsModalIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  overflow: hidden;
+}
+
+@keyframes reactionsModalIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.92) translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.reactions-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 0;
+}
+
+.reactions-modal-title {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--color-text-main);
+}
+
+.reactions-modal-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: none;
+  color: var(--color-text-dim);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.reactions-modal-close:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: var(--color-text-main);
+}
+
+/* Tab bar */
+.reactions-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 12px 20px 0;
+  position: relative;
+  border-bottom: 1px solid var(--color-border-dark);
+}
+
+.reactions-tab {
+  flex: none;
+  padding: 10px 16px;
+  border: none;
+  background: none;
+  color: var(--color-text-dim);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.2s;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.reactions-tab:hover {
+  color: var(--color-text-main);
+}
+
+.reactions-tab-active {
+  color: var(--color-primary);
+}
+
+/* Animated underline indicator */
+.reactions-tab-indicator {
+  position: absolute;
+  bottom: 0;
+  height: 3px;
+  background: var(--color-primary);
+  border-radius: 3px 3px 0 0;
+  transition: left 0.25s cubic-bezier(0.4, 0, 0.2, 1), width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* User list area */
+.reactions-list-viewport {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  min-height: 200px;
+}
+
+.reactions-list-track {
+  position: absolute;
+  inset: 0;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.reactions-user-list {
+  position: absolute;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  padding: 8px 20px 16px;
+  scrollbar-width: none;
+}
+
+.reactions-user-list::-webkit-scrollbar {
+  display: none;
+}
+
+.reactions-user-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  transition: background-color 0.15s;
+  border-radius: 8px;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+.reactions-user-item:last-child {
+  border-bottom: none;
+}
+
+.reactions-user-item:hover {
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+.reactions-user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.reactions-user-avatar-placeholder {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: white;
+  font-size: 0.95rem;
+  flex-shrink: 0;
+}
+
+.reactions-user-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.reactions-user-displayname {
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--color-text-main);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reactions-user-handle {
+  font-size: 0.8rem;
+  color: var(--color-text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reactions-user-emoji {
+  font-size: 1.3rem;
+  flex-shrink: 0;
+}
+
+/* Loading skeleton */
+.reactions-skeleton-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+}
+
+.reactions-skeleton-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  animation: skeletonPulse 1.4s ease-in-out infinite;
+}
+
+.reactions-skeleton-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.reactions-skeleton-line {
+  height: 12px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  animation: skeletonPulse 1.4s ease-in-out infinite;
+}
+
+.reactions-skeleton-line:first-child {
+  width: 60%;
+}
+
+.reactions-skeleton-line:last-child {
+  width: 40%;
+}
+
+@keyframes skeletonPulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes slideInLeft {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+/* Mobile bottom sheet */
+@media (max-width: 768px) {
+  .reactions-modal-backdrop {
+    align-items: flex-end;
+  }
+
+  .reactions-modal {
+    width: 100%;
+    max-width: 100%;
+    border-radius: 20px 20px 0 0;
+    max-height: 75vh;
+    animation: reactionsSheetUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  @keyframes reactionsSheetUp {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+
+  .reactions-tabs {
+    overflow-x: auto;
+    padding: 12px 16px 0;
+  }
+
+  .reactions-user-list {
+    padding: 8px 16px 16px;
+  }
+
+  .reactions-modal-header {
+    padding: 16px 16px 0;
+  }
 }

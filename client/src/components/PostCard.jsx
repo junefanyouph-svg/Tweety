@@ -251,6 +251,215 @@ function ExpandedImageViewer({ initialImage, images, onClose }) {
 )
 }
 
+function ReactionsModal({ postId, onClose, navigate }) {
+  const [reactionsData, setReactionsData] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState('all')
+  const [prevTabIndex, setPrevTabIndex] = useState(0)
+  const [slideDir, setSlideDir] = useState(0) // -1 left, 0 none, 1 right
+  const [animating, setAnimating] = useState(false)
+  const tabBarRef = useRef(null)
+  const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 })
+
+  // Fetch reactions with profile data on mount
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true)
+      const { data, error } = await supabase
+        .from('reactions')
+        .select('*, profiles(username, display_name, avatar_url)')
+        .eq('post_id', postId)
+        .order('created_at', { ascending: false })
+
+      if (!error && data) {
+        setReactionsData(data)
+      }
+      setLoading(false)
+    }
+    fetchData()
+  }, [postId])
+
+  // Close on Escape
+  useEffect(() => {
+    const handleKey = (e) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [onClose])
+
+  // Build tabs from actual data
+  const emojiGroups = React.useMemo(() => {
+    if (!reactionsData) return {}
+    return reactionsData.reduce((acc, r) => {
+      if (!acc[r.emoji]) acc[r.emoji] = []
+      acc[r.emoji].push(r)
+      return acc
+    }, {})
+  }, [reactionsData])
+
+  const tabs = React.useMemo(() => {
+    const result = [{ key: 'all', label: 'All', count: reactionsData?.length || 0 }]
+    // Maintain consistent emoji order
+    for (const emoji of REACTION_EMOJIS) {
+      if (emojiGroups[emoji]?.length > 0) {
+        result.push({ key: emoji, label: emoji, count: emojiGroups[emoji].length })
+      }
+    }
+    return result
+  }, [emojiGroups, reactionsData])
+
+  const currentTabIndex = tabs.findIndex(t => t.key === activeTab)
+
+  // Update indicator position when tab changes
+  useEffect(() => {
+    if (!tabBarRef.current) return
+    const activeEl = tabBarRef.current.querySelector('.reactions-tab-active')
+    if (activeEl) {
+      setIndicatorStyle({
+        left: activeEl.offsetLeft,
+        width: activeEl.offsetWidth
+      })
+    }
+  }, [activeTab, tabs, loading])
+
+  const handleTabClick = (tabKey) => {
+    if (tabKey === activeTab || animating) return
+    const newIndex = tabs.findIndex(t => t.key === tabKey)
+    const oldIndex = currentTabIndex
+    setSlideDir(newIndex > oldIndex ? 1 : -1)
+    setPrevTabIndex(oldIndex)
+    setAnimating(true)
+    setActiveTab(tabKey)
+    setTimeout(() => setAnimating(false), 250)
+  }
+
+  const filteredUsers = React.useMemo(() => {
+    if (!reactionsData) return []
+    if (activeTab === 'all') return reactionsData
+    return reactionsData.filter(r => r.emoji === activeTab)
+  }, [reactionsData, activeTab])
+
+  const prevFilteredUsers = React.useMemo(() => {
+    if (!reactionsData || !animating) return []
+    const prevTab = tabs[prevTabIndex]
+    if (!prevTab) return []
+    if (prevTab.key === 'all') return reactionsData
+    return reactionsData.filter(r => r.emoji === prevTab.key)
+  }, [reactionsData, animating, prevTabIndex, tabs])
+
+  const renderUserList = (users, showEmoji = true) => (
+    users.map((r, idx) => {
+      const username = r.profiles?.username || 'unknown'
+      const displayName = r.profiles?.display_name || username
+      const avatarUrl = r.profiles?.avatar_url
+      return (
+        <div
+          key={`${r.user_id}-${idx}`}
+          className="reactions-user-item"
+          onClick={() => { onClose(); navigate(`/profile/${username}`) }}
+        >
+          {avatarUrl
+            ? <img src={avatarUrl} className="reactions-user-avatar" alt="" />
+            : <div className="reactions-user-avatar-placeholder">{username?.charAt(0)}</div>
+          }
+          <div className="reactions-user-info">
+            <div className="reactions-user-displayname">{displayName}</div>
+            <div className="reactions-user-handle">@{username}</div>
+          </div>
+          {showEmoji && activeTab === 'all' && (
+            <span className="reactions-user-emoji">{r.emoji}</span>
+          )}
+        </div>
+      )
+    })
+  )
+
+  const renderSkeleton = () => (
+    Array(5).fill(0).map((_, i) => (
+      <div key={i} className="reactions-skeleton-item">
+        <div className="reactions-skeleton-avatar" />
+        <div className="reactions-skeleton-text">
+          <div className="reactions-skeleton-line" />
+          <div className="reactions-skeleton-line" />
+        </div>
+      </div>
+    ))
+  )
+
+  return createPortal(
+    <div className="reactions-modal-backdrop" onClick={onClose}>
+      <div className="reactions-modal" onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div className="reactions-modal-header">
+          <span className="reactions-modal-title">Reactions</span>
+          <button className="reactions-modal-close" onClick={onClose}>
+            <span className="material-symbols-outlined">close</span>
+          </button>
+        </div>
+
+        {/* Tab bar */}
+        <div className="reactions-tabs" ref={tabBarRef}>
+          {tabs.map(tab => (
+            <button
+              key={tab.key}
+              className={`reactions-tab ${activeTab === tab.key ? 'reactions-tab-active' : ''}`}
+              onClick={() => handleTabClick(tab.key)}
+            >
+              <span>{tab.label}</span>
+              <span>{tab.count}</span>
+            </button>
+          ))}
+          <div
+            className="reactions-tab-indicator"
+            style={{ left: indicatorStyle.left, width: indicatorStyle.width }}
+          />
+        </div>
+
+        {/* User list with slide animation */}
+        <div className="reactions-list-viewport">
+          {loading ? (
+            <div className="reactions-user-list" style={{ position: 'relative' }}>
+              {renderSkeleton()}
+            </div>
+          ) : (
+            <>
+              {/* Outgoing (previous) list */}
+              {animating && (
+                <div
+                  className="reactions-user-list"
+                  style={{
+                    transform: `translateX(${slideDir * -100}%)`,
+                    transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                    position: 'absolute'
+                  }}
+                >
+                  {renderUserList(prevFilteredUsers)}
+                </div>
+              )}
+              {/* Current (incoming) list */}
+              <div
+                className="reactions-user-list"
+                style={{
+                  transform: animating ? 'translateX(0)' : 'translateX(0)',
+                  animation: animating
+                    ? `slideIn${slideDir > 0 ? 'Right' : 'Left'} 0.25s cubic-bezier(0.4, 0, 0.2, 1)`
+                    : 'none',
+                  position: 'absolute'
+                }}
+              >
+                {filteredUsers.length === 0
+                  ? <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--color-text-dim)', fontSize: '0.9rem' }}>No reactions yet</div>
+                  : renderUserList(filteredUsers)
+                }
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>,
+    document.body
+  )
+}
+
 const REACTION_EMOJIS = ['❤️', '😂', '🤬', '😮', '💔']
 
 export default function PostCard({ post, user, onDelete, onNavigate, defaultOpenComments = false, highlightQuery = '' }) {
@@ -283,6 +492,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
   const longPressTimer = useRef(null)
   const reactionsRef = useRef([])
   const reactionBtnRef = useRef(null)
+  const [showReactionsModal, setShowReactionsModal] = useState(false)
   const [authorDisplayName, setAuthorDisplayName] = useState(post.profiles?.display_name || post.display_name || null)
   const [authorAvatarUrl, setAuthorAvatarUrl] = useState(post.profiles?.avatar_url || post.avatar_url || null)
   const postUsername = post.profiles?.username || post.username || null
@@ -1216,7 +1426,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
       <div className="flex gap-2 mt-4 items-center border-t border-border-dark pt-3 relative z-10" onClick={(e) => { e.stopPropagation(); toggleComments(); }}>
         {/* Reaction Button + Picker */}
         <div
-          className="relative"
+          className="relative flex items-center gap-0.5"
           onMouseEnter={handleReactionHoverEnter}
           onMouseLeave={handleReactionHoverLeave}
           ref={reactionBtnRef}
@@ -1233,8 +1443,14 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
               ? <span className="text-[1.2rem] leading-none">{myReaction.emoji}</span>
               : <span className="material-symbols-outlined text-[1.1rem]">favorite</span>
             }
-            <span className={myReaction ? 'font-bold' : ''}>{reactions.length}</span>
           </button>
+          {/* Clickable count — opens reactions modal */}
+          <span
+            className={`text-[0.9rem] cursor-pointer hover:underline ${myReaction ? 'font-bold' : 'text-text-dim'}`}
+            onClick={(e) => { e.stopPropagation(); if (reactions.length > 0) setShowReactionsModal(true) }}
+          >
+            {reactions.length}
+          </span>
 
           {/* Reaction Picker Popup */}
           {showReactionPicker && (
@@ -1392,6 +1608,13 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
           </div>
         </div>,
         document.body
+      )}
+      {showReactionsModal && (
+        <ReactionsModal
+          postId={post.id}
+          onClose={() => setShowReactionsModal(false)}
+          navigate={navigate}
+        />
       )}
     </div>
   )
