@@ -821,6 +821,16 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
     return () => document.removeEventListener('pointerdown', handleClickOutside)
   }, [showReactionPicker, closeReactionPicker])
 
+  // Mobile scroll lock when picker is open
+  React.useEffect(() => {
+    if (showReactionPicker && window.matchMedia('(max-width: 768px)').matches) {
+      document.body.style.overflow = 'hidden'
+      return () => {
+        document.body.style.overflow = ''
+      }
+    }
+  }, [showReactionPicker])
+
   const handleReaction = async (emoji = null) => {
     if (!user) return
     const userId = user.id
@@ -1446,7 +1456,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
         )}
       </div>
 
-      <div className="flex gap-2 mt-4 items-center border-t border-border-dark pt-3 relative z-10" onClick={(e) => { e.stopPropagation(); toggleComments(); }}>
+      <div className={`flex gap-2 mt-4 items-center border-t border-border-dark pt-3 relative ${showReactionPicker ? 'z-50' : 'z-10'}`} onClick={(e) => { e.stopPropagation(); toggleComments(); }}>
         {/* Reaction Button + Picker */}
         <div
           className="relative flex items-center gap-0.5"
@@ -1477,7 +1487,13 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
 
           {/* Reaction Picker Popup */}
           {showReactionPicker && (
-            <div
+            <>
+              {/* Mobile Backdrop */}
+              <div 
+                className={`reaction-picker-backdrop ${closingReactionPicker ? 'closing' : ''}`}
+                onClick={(e) => { e.stopPropagation(); closeReactionPicker() }}
+              />
+              <div
               className={`reaction-picker ${closingReactionPicker ? 'reaction-picker-closing' : ''}`}
               onMouseEnter={handleReactionPickerEnter}
               onMouseLeave={handleReactionPickerLeave}
@@ -1499,6 +1515,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
                 </button>
               ))}
             </div>
+            </>
           )}
         </div>
 
