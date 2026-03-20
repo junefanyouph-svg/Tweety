@@ -487,6 +487,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
   const [toast, setToast] = useState(false)
   const [reactionAnim, setReactionAnim] = useState(false)
   const [showReactionPicker, setShowReactionPicker] = useState(false)
+  const [closingReactionPicker, setClosingReactionPicker] = useState(false)
   const [lastUsedEmoji, setLastUsedEmoji] = useState('❤️')
   const reactionHoverTimer = useRef(null)
   const longPressTimer = useRef(null)
@@ -800,6 +801,26 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
     return attachCommentImage(file)
   }
 
+  const closeReactionPicker = React.useCallback(() => {
+    if (window.matchMedia('(max-width: 768px)').matches) {
+      setClosingReactionPicker(true)
+    } else {
+      setShowReactionPicker(false)
+    }
+  }, [])
+
+  // Close reaction picker on outside click
+  React.useEffect(() => {
+    if (!showReactionPicker) return
+    const handleClickOutside = (e) => {
+      // If clicking inside the picker, do nothing
+      if (e.target.closest('.reaction-picker') || e.target.closest('.reaction-btn')) return
+      closeReactionPicker()
+    }
+    document.addEventListener('pointerdown', handleClickOutside)
+    return () => document.removeEventListener('pointerdown', handleClickOutside)
+  }, [showReactionPicker, closeReactionPicker])
+
   const handleReaction = async (emoji = null) => {
     if (!user) return
     const userId = user.id
@@ -835,7 +856,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
       }).catch(err => console.error('React API error:', err))
       await broadcastReaction({ sender_id: userId, post_id: post.id, emoji: selectedEmoji, action: 'upsert' })
     }
-    setShowReactionPicker(false)
+    closeReactionPicker()
   }
 
   const handleReactionHoverEnter = () => {
@@ -851,7 +872,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
     clearTimeout(reactionHoverTimer.current)
     // Small delay before closing so user can move to the picker
     reactionHoverTimer.current = setTimeout(() => {
-      setShowReactionPicker(false)
+      closeReactionPicker()
     }, 300)
   }
 
@@ -861,7 +882,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
 
   const handleReactionPickerLeave = () => {
     reactionHoverTimer.current = setTimeout(() => {
-      setShowReactionPicker(false)
+      closeReactionPicker()
     }, 200)
   }
 
@@ -1457,9 +1478,15 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
           {/* Reaction Picker Popup */}
           {showReactionPicker && (
             <div
-              className="reaction-picker"
+              className={`reaction-picker ${closingReactionPicker ? 'reaction-picker-closing' : ''}`}
               onMouseEnter={handleReactionPickerEnter}
               onMouseLeave={handleReactionPickerLeave}
+              onAnimationEnd={() => {
+                if (closingReactionPicker) {
+                  setShowReactionPicker(false)
+                  setClosingReactionPicker(false)
+                }
+              }}
               onClick={e => e.stopPropagation()}
             >
               {REACTION_EMOJIS.map(emoji => (
@@ -1470,18 +1497,6 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
                 >
                   {emoji}
                 </button>
-              ))}
-            </div>
-          )}
-
-          {/* Reaction breakdown tooltip on hover over the count */}
-          {reactions.length > 0 && Object.keys(reactionCounts).length > 1 && (
-            <div className="reaction-breakdown">
-              {Object.entries(reactionCounts).sort((a, b) => b[1] - a[1]).map(([emoji, count]) => (
-                <span key={emoji} className="reaction-breakdown-item">
-                  <span>{emoji}</span>
-                  <span className="text-[0.7rem] font-bold">{count}</span>
-                </span>
               ))}
             </div>
           )}
