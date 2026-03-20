@@ -187,8 +187,8 @@ export default function Search() {
       <div style={styles.results}>
         {loading && (
   <div>
-    {Array(2).fill(0).map((_, i) => <UserCardSkeleton key={`u${i}`} />)}
-    {Array(3).fill(0).map((_, i) => <PostSkeleton key={`p${i}`} />)}
+    {Array(5).fill(0).map((_, i) => <UserCardSkeleton key={`u${i}`} />)}
+    {Array(10).fill(0).map((_, i) => <PostSkeleton key={`p${i}`} />)}
   </div>
 )}
 

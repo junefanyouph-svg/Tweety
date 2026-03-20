@@ -1,4 +1,35 @@
+import React from 'react'
+
+let skeletonMountCount = 0
+
+export function useSkeletonScrollLock() {
+  React.useEffect(() => {
+    if (skeletonMountCount === 0) {
+      document.body.dataset.scrollY = window.scrollY.toString()
+      document.body.style.overflow = 'hidden'
+    }
+    skeletonMountCount++
+
+    return () => {
+      skeletonMountCount--
+      if (skeletonMountCount === 0) {
+        document.body.style.overflow = ''
+        const scrollY = document.body.dataset.scrollY
+        if (scrollY) {
+          window.scrollTo(0, parseInt(scrollY, 10))
+        }
+      }
+    }
+  }, [])
+}
+
+export function SkeletonScrollLocker() {
+  useSkeletonScrollLock()
+  return null
+}
+
 export function PostSkeleton() {
+  useSkeletonScrollLock()
   return (
     <div style={skeletonStyles.post}>
       <div style={skeletonStyles.header}>
@@ -33,6 +64,7 @@ export function PostSkeleton() {
 }
 
 export function ProfileSkeleton() {
+  useSkeletonScrollLock()
   return (
     <div style={skeletonStyles.profileCard}>
       <div style={{ ...skeletonStyles.avatar }}></div>
@@ -51,6 +83,7 @@ export function ProfileSkeleton() {
 }
 
 export function UserCardSkeleton() {
+  useSkeletonScrollLock()
   return (
     <div style={skeletonStyles.userCard}>
       <div style={skeletonStyles.avatar}></div>
@@ -63,9 +96,9 @@ export function UserCardSkeleton() {
 }
 
 const skeletonStyles = {
-  post: { backgroundColor: 'var(--color-surface)', borderRadius: '0', padding: '20px', border: '1px solid var(--color-border-dark)', marginBottom: '0' },
-  profileCard: { backgroundColor: 'var(--color-surface)', borderRadius: '16px', padding: '24px', margin: '20px 0', border: '1px solid var(--color-border-dark)', display: 'flex', gap: '20px' },
-  userCard: { display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', backgroundColor: 'var(--color-surface)', borderRadius: '16px', border: '1px solid var(--color-border-dark)', marginBottom: '12px' },
+  post: { backgroundColor: 'var(--color-surface)', borderRadius: '0', padding: '20px', border: '1px solid var(--color-border-dark)', marginBottom: '0', width: '100%', boxSizing: 'border-box' },
+  profileCard: { backgroundColor: 'var(--color-surface)', borderRadius: '16px', padding: '24px', margin: '20px 0', border: '1px solid var(--color-border-dark)', display: 'flex', gap: '20px', width: '100%', boxSizing: 'border-box' },
+  userCard: { display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', backgroundColor: 'var(--color-surface)', borderRadius: '16px', border: '1px solid var(--color-border-dark)', marginBottom: '12px', width: '100%', boxSizing: 'border-box' },
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' },
   actions: { display: 'flex', gap: '12px', marginTop: '16px', paddingTop: '12px', borderTop: '1px solid var(--color-border-dark)' },
   box: { borderRadius: '6px', background: 'linear-gradient(90deg, var(--color-surface) 25%, var(--color-border-dark) 50%, var(--color-surface) 75%)', backgroundSize: '600px 100%', animation: 'shimmer 1.5s infinite' },

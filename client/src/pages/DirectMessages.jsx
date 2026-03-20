@@ -5,6 +5,7 @@ import { styles } from '../styles/Messages.styles'
 import NewMessageModal from '../components/NewMessageModal'
 import { API_URL } from '../utils/apiUrl'
 import { mergeCachedProfile, setCachedProfile } from '../utils/profileCache'
+import { SkeletonScrollLocker } from '../components/Skeleton'
 
 export default function DirectMessages() {
     const [conversations, setConversations] = useState([])
@@ -151,7 +152,8 @@ export default function DirectMessages() {
 
             {loading ? (
                 <div style={styles.skeletonList}>
-                    {[1, 2, 3, 4].map(i => (
+                    <SkeletonScrollLocker />
+                    {Array(15).fill(0).map((_, i) => (
                         <div key={i} style={styles.skeletonRow}>
                             <div style={styles.skeletonAvatar} />
                             <div style={styles.skeletonInfo}>

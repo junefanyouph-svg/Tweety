@@ -4,7 +4,8 @@ import { supabase } from '../supabase'
 import { styles } from '../styles/Chat.styles'
 import GifPicker from '../components/GifPicker'
 import { API_URL } from '../utils/apiUrl'
-import { DEFAULT_IMAGE_UPLOAD_OPTIONS, compressImageForUpload, getUploadExtension } from '../utils/imageUpload'
+import { getUploadExtension, DEFAULT_IMAGE_UPLOAD_OPTIONS, compressImageForUpload } from '../utils/imageUpload'
+import { SkeletonScrollLocker } from '../components/Skeleton'
 
 export default function ChatPage() {
     const { userId } = useParams() // recipient user id or a conversation id
@@ -530,6 +531,7 @@ export default function ChatPage() {
             <div style={{ ...styles.messageList, position: 'relative', opacity: (loading || isScrollReady) ? 1 : 0 }} ref={messageListRef}>
                 {loading && messages.length === 0 ? (
                     <div style={styles.loadingWrapper}>
+                        <SkeletonScrollLocker />
                         <div style={styles.loadingBubbleRow}>
                             <div style={styles.loadingBubbleSmall}></div>
                         </div>

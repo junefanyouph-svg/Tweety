@@ -269,7 +269,7 @@ export default function Profile() {
       <ProfileSkeleton />
       <div className="mt-8 pb-8">
         <h3 className="text-[1.1rem] font-bold text-text-main mb-4 pb-3 border-b border-border-dark">Posts</h3>
-        {Array(3).fill(0).map((_, i) => <PostSkeleton key={i} />)}
+        {Array(10).fill(0).map((_, i) => <PostSkeleton key={i} />)}
       </div>
     </div>
   )
@@ -454,7 +454,7 @@ export default function Profile() {
           </h3>
           <div className="flex flex-col gap-px">
             {postsLoading
-              ? Array(3).fill(0).map((_, i) => <PostSkeleton key={i} />)
+              ? Array(10).fill(0).map((_, i) => <PostSkeleton key={i} />)
               : posts.length === 0
                 ? <p className="text-center text-text-dim mt-12 py-10 bg-white/5 rounded-2xl border border-dashed border-border-dark">No posts yet.</p>
                 : posts.map(post => (

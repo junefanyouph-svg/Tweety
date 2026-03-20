@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { supabase } from '../supabase'
 import PostCard from '../components/PostCard'
+import { PostSkeleton } from '../components/Skeleton'
 import { API_URL } from '../utils/apiUrl'
 
 export default function PostPage() {
@@ -48,9 +49,18 @@ export default function PostPage() {
   }
 
   if (loading) return (
-    <div className="flex items-center justify-center min-h-[50vh] text-text-dim">
-      <span className="material-symbols-outlined filled animate-spin text-2xl mr-3">autorenew</span>
-      Loading...
+    <div className="max-w-[620px] mx-auto px-4 w-full box-border pb-8">
+      <div className="flex items-center gap-4 py-3 border-b border-border-dark sticky top-0 bg-bg-dark/80 backdrop-blur-md z-10">
+        <button
+          className="p-2 hover:bg-white/5 rounded-full text-text-main transition-colors flex items-center gap-2 text-[0.95rem] font-bold"
+          onClick={() => navigate(from)}
+        >
+          <span className="material-symbols-outlined filled">arrow_back</span> {fromLabel}
+        </button>
+      </div>
+      <div className="mt-5 flex flex-col gap-px">
+        {Array(8).fill(0).map((_, i) => <PostSkeleton key={i} />)}
+      </div>
     </div>
   )
 

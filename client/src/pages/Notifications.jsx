@@ -6,6 +6,8 @@ import PullToRefresh from '../components/PullToRefresh'
 import { API_URL } from '../utils/apiUrl'
 import { mergeCachedProfiles, setCachedProfile } from '../utils/profileCache'
 
+import { SkeletonScrollLocker } from '../components/Skeleton'
+
 export default function Notifications() {
   const [notifications, setNotifications] = useState([])
   const [user, setUser] = useState(null)
@@ -175,7 +177,8 @@ export default function Notifications() {
 
       {loading ? (
         <div style={styles.skeletonList}>
-          {[1, 2, 3, 4].map(i => (
+          <SkeletonScrollLocker />
+          {Array(15).fill(0).map((_, i) => (
             <div key={i} style={styles.skeletonRow}>
               <div style={styles.skeletonIcon} />
               <div style={styles.skeletonInfo}>

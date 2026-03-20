@@ -182,7 +182,7 @@ export default function Feed() {
           {/* Posts Feed */}
           <div className="flex flex-col gap-px pb-8">
             {loading
-              ? Array(4).fill(0).map((_, i) => <PostSkeleton key={i} />)
+              ? Array(10).fill(0).map((_, i) => <PostSkeleton key={i} />)
               : posts.length === 0
                 ? <p className="text-center text-text-dim mt-8 text-[0.95rem]">No posts yet. Be the first! 🚀</p>
                 : posts.map(post => (
