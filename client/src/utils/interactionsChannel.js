@@ -41,3 +41,15 @@ export function broadcastCommentLike({ sender_id, comment_id, user_id, action })
   })
 }
 
+export function broadcastReaction({ sender_id, post_id, user_id, emoji, action }) {
+  return interactionsChannel.send({
+    type: 'broadcast',
+    event: 'reaction',
+    payload: {
+      sender_id,
+      new: action !== 'delete' ? { post_id, user_id, emoji } : null,
+      old: action === 'delete' ? { post_id, user_id } : null,
+    },
+  })
+}
+

@@ -7,7 +7,7 @@ import UserMentionPicker from './UserMentionPicker'
 import { getCache, setCache, invalidateCache } from '../utils/cache'
 import { getCachedProfile, getProfile, setCachedProfile } from '../utils/profileCache'
 import RichTextEditor from './RichTextEditor'
-import { broadcastLike, broadcastComment, broadcastCommentLike } from '../utils/interactionsChannel'
+import { broadcastComment, broadcastCommentLike, broadcastReaction } from '../utils/interactionsChannel'
 import { API_URL } from '../utils/apiUrl'
 import { formatDate } from '../utils/formatDate'
 import { DEFAULT_IMAGE_UPLOAD_OPTIONS, compressImageForUpload, getUploadExtension } from '../utils/imageUpload'
@@ -251,8 +251,10 @@ function ExpandedImageViewer({ initialImage, images, onClose }) {
 )
 }
 
+const REACTION_EMOJIS = ['❤️', '😂', '🤬', '😮', '💔']
+
 export default function PostCard({ post, user, onDelete, onNavigate, defaultOpenComments = false, highlightQuery = '' }) {
-  const [likes, setLikes] = useState([])
+  const [reactions, setReactions] = useState([])
   const [comments, setComments] = useState([])
   const [commentInput, setCommentInput] = useState('')
   const [commentImage, setCommentImage] = useState(null)
@@ -274,7 +276,13 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
   const [showMenu, setShowMenu] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [toast, setToast] = useState(false)
-  const [heartAnim, setHeartAnim] = useState(false)
+  const [reactionAnim, setReactionAnim] = useState(false)
+  const [showReactionPicker, setShowReactionPicker] = useState(false)
+  const [lastUsedEmoji, setLastUsedEmoji] = useState('❤️')
+  const reactionHoverTimer = useRef(null)
+  const longPressTimer = useRef(null)
+  const reactionsRef = useRef([])
+  const reactionBtnRef = useRef(null)
   const [authorDisplayName, setAuthorDisplayName] = useState(post.profiles?.display_name || post.display_name || null)
   const [authorAvatarUrl, setAuthorAvatarUrl] = useState(post.profiles?.avatar_url || post.avatar_url || null)
   const postUsername = post.profiles?.username || post.username || null
@@ -294,7 +302,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
   const [editCommentSubmitting, setEditCommentSubmitting] = useState(false)
   const [isDeletingPost, setIsDeletingPost] = useState(false)
   const [isDeletingComment, setIsDeletingComment] = useState(false)
-  const likesRef = useRef([])
+  // likesRef kept for backward compat reference; reactions use reactionsRef above
   const menuRef = useRef(null)
   const [hoveredComment, setHoveredComment] = useState(null)
   const commentMenuRef = useRef(null)
@@ -304,15 +312,15 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
   const carouselRef = useRef(null)
   const lastCommentCursorPos = useRef(0)
   const navigate = useNavigate()
-  const fetchFnRef = useRef({ fetchLikes: null, fetchComments: null })
+  const fetchFnRef = useRef({ fetchReactions: null, fetchComments: null })
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const commentsRef = useRef([])
   const closeCommentsTimerRef = useRef(null)
   const postImageUrls = getPostImageUrls(post)
 
-  fetchFnRef.current.fetchLikes = async () => {
-    const { data } = await supabase.from('likes').select('*').eq('post_id', post.id)
-    if (data) { likesRef.current = data; setLikes(data) }
+  fetchFnRef.current.fetchReactions = async () => {
+    const { data } = await supabase.from('reactions').select('*').eq('post_id', post.id)
+    if (data) { reactionsRef.current = data; setReactions(data) }
   }
   fetchFnRef.current.fetchComments = async () => {
     const { data } = await supabase.from('comments').select('*, profiles(username, avatar_url, display_name), comment_likes(user_id)').eq('post_id', post.id).order('created_at', { ascending: true })
@@ -333,9 +341,12 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
   }
 
   useEffect(() => {
-    fetchFnRef.current.fetchLikes(); fetchFnRef.current.fetchComments();
+    fetchFnRef.current.fetchReactions(); fetchFnRef.current.fetchComments();
+    const handleGlobalReaction = (e) => {
+      const p = e.detail; if ((p.new && String(p.new.post_id) === String(post.id)) || (p.old && String(p.old.post_id) === String(post.id))) fetchFnRef.current.fetchReactions()
+    }
     const handleGlobalLike = (e) => {
-      const p = e.detail; if ((p.new && String(p.new.post_id) === String(post.id)) || (p.old && String(p.old.post_id) === String(post.id))) fetchFnRef.current.fetchLikes()
+      const p = e.detail; if ((p.new && String(p.new.post_id) === String(post.id)) || (p.old && String(p.old.post_id) === String(post.id))) fetchFnRef.current.fetchReactions()
     }
     const handleGlobalComment = (e) => {
       const p = e.detail; if ((p.new && String(p.new.post_id) === String(post.id)) || (p.old && String(p.old.post_id) === String(post.id))) fetchFnRef.current.fetchComments()
@@ -344,8 +355,8 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
       const p = e.detail; const cId = p.new?.comment_id || p.old?.comment_id
       if (cId && commentsRef.current.some(c => String(c.id) === String(cId))) fetchFnRef.current.fetchComments()
     }
-    window.addEventListener('tweety_global_like', handleGlobalLike); window.addEventListener('tweety_global_comment', handleGlobalComment); window.addEventListener('tweety_global_comment_like', handleGlobalCommentLike);
-    return () => { window.removeEventListener('tweety_global_like', handleGlobalLike); window.removeEventListener('tweety_global_comment', handleGlobalComment); window.removeEventListener('tweety_global_comment_like', handleGlobalCommentLike); }
+    window.addEventListener('tweety_global_reaction', handleGlobalReaction); window.addEventListener('tweety_global_like', handleGlobalLike); window.addEventListener('tweety_global_comment', handleGlobalComment); window.addEventListener('tweety_global_comment_like', handleGlobalCommentLike);
+    return () => { window.removeEventListener('tweety_global_reaction', handleGlobalReaction); window.removeEventListener('tweety_global_like', handleGlobalLike); window.removeEventListener('tweety_global_comment', handleGlobalComment); window.removeEventListener('tweety_global_comment_like', handleGlobalCommentLike); }
   }, [post.id])
 
   useEffect(() => {
@@ -579,36 +590,101 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
     return attachCommentImage(file)
   }
 
-  const handleLike = async () => {
+  const handleReaction = async (emoji = null) => {
     if (!user) return
     const userId = user.id
     const username = user.user_metadata?.username
-    const already = likesRef.current.find(l => l.user_id === userId)
-    if (already) {
-      const newLikes = likesRef.current.filter(l => l.user_id !== userId)
-      likesRef.current = newLikes
-      setLikes(newLikes)
-      fetch(`${API_URL}/likes`, {
+    const existing = reactionsRef.current.find(r => r.user_id === userId)
+    const selectedEmoji = emoji || lastUsedEmoji || '❤️'
+
+    if (existing && existing.emoji === selectedEmoji) {
+      // Un-react: same emoji clicked again
+      const updated = reactionsRef.current.filter(r => r.user_id !== userId)
+      reactionsRef.current = updated
+      setReactions(updated)
+      fetch(`${API_URL}/reactions`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ post_id: post.id, user_id: userId })
-      }).catch(err => console.error('Unlike API error:', err))
-      await broadcastLike({ sender_id: userId, post_id: post.id, action: 'unlike' })
+      }).catch(err => console.error('Unreact API error:', err))
+      await broadcastReaction({ sender_id: userId, post_id: post.id, action: 'delete' })
     } else {
-      setHeartAnim(true); setTimeout(() => setHeartAnim(false), 400)
-      const newLike = { post_id: post.id, user_id: userId }
-      const newLikes = [...likesRef.current, newLike]
-      likesRef.current = newLikes
-      setLikes(newLikes)
-      // Use the API endpoint so the server can fire a like notification to the post owner
-      fetch(`${API_URL}/likes`, {
+      // React or change reaction
+      setReactionAnim(true); setTimeout(() => setReactionAnim(false), 400)
+      setLastUsedEmoji(selectedEmoji)
+      const newReaction = { post_id: post.id, user_id: userId, emoji: selectedEmoji }
+      const updated = existing
+        ? reactionsRef.current.map(r => r.user_id === userId ? { ...r, emoji: selectedEmoji } : r)
+        : [...reactionsRef.current, newReaction]
+      reactionsRef.current = updated
+      setReactions(updated)
+      fetch(`${API_URL}/reactions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ post_id: post.id, user_id: userId, username })
-      }).catch(err => console.error('Like API error:', err))
-      await broadcastLike({ sender_id: userId, post_id: post.id, action: 'like' })
+        body: JSON.stringify({ post_id: post.id, user_id: userId, emoji: selectedEmoji, username })
+      }).catch(err => console.error('React API error:', err))
+      await broadcastReaction({ sender_id: userId, post_id: post.id, emoji: selectedEmoji, action: 'upsert' })
+    }
+    setShowReactionPicker(false)
+  }
+
+  const handleReactionHoverEnter = () => {
+    clearTimeout(reactionHoverTimer.current)
+    reactionHoverTimer.current = setTimeout(() => {
+      setShowReactionPicker(true)
+    }, 300)
+  }
+
+  const handleReactionHoverLeave = () => {
+    clearTimeout(reactionHoverTimer.current)
+    // Small delay before closing so user can move to the picker
+    reactionHoverTimer.current = setTimeout(() => {
+      setShowReactionPicker(false)
+    }, 300)
+  }
+
+  const handleReactionPickerEnter = () => {
+    clearTimeout(reactionHoverTimer.current)
+  }
+
+  const handleReactionPickerLeave = () => {
+    reactionHoverTimer.current = setTimeout(() => {
+      setShowReactionPicker(false)
+    }, 200)
+  }
+
+  // Mobile: long-press to show picker, tap toggles last/default
+  const handleReactionTouchStart = () => {
+    longPressTimer.current = setTimeout(() => {
+      setShowReactionPicker(true)
+      longPressTimer.current = null
+    }, 500)
+  }
+
+  const handleReactionTouchEnd = (e) => {
+    if (longPressTimer.current) {
+      // Short tap — timer didn't fire
+      clearTimeout(longPressTimer.current)
+      longPressTimer.current = null
+      e.preventDefault()
+      handleReaction()
     }
   }
+
+  const handleReactionTouchMove = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current)
+      longPressTimer.current = null
+    }
+  }
+
+  const myReaction = reactions.find(r => r.user_id === user?.id)
+
+  // Group reactions by emoji for the breakdown tooltip
+  const reactionCounts = reactions.reduce((acc, r) => {
+    acc[r.emoji] = (acc[r.emoji] || 0) + 1
+    return acc
+  }, {})
 
   const handleEditPost = async () => {
     if (!editPostText.trim()) return
@@ -1138,7 +1214,61 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
       </div>
 
       <div className="flex gap-2 mt-4 items-center border-t border-border-dark pt-3 relative z-10" onClick={(e) => { e.stopPropagation(); toggleComments(); }}>
-        <button className={`bg-none border-none cursor-pointer text-[0.9rem] py-1.5 px-3 rounded-lg flex items-center gap-1.5 hover:bg-primary-dim transition-colors ${likes.some(l => l.user_id === user?.id) ? 'text-[#e0245e]' : 'text-text-dim'} ${heartAnim ? 'heart-bounce' : ''}`} onClick={(e) => { e.stopPropagation(); handleLike(); }}><span className={`material-symbols-outlined text-[1.1rem] ${likes.some(l => l.user_id === user?.id) ? 'filled' : ''}`}>favorite</span> <span>{likes.length}</span></button>
+        {/* Reaction Button + Picker */}
+        <div
+          className="relative"
+          onMouseEnter={handleReactionHoverEnter}
+          onMouseLeave={handleReactionHoverLeave}
+          ref={reactionBtnRef}
+          onClick={e => e.stopPropagation()}
+        >
+          <button
+            className={`reaction-btn bg-none border-none cursor-pointer text-[0.9rem] py-1.5 px-3 rounded-lg flex items-center gap-1.5 hover:bg-primary-dim transition-colors ${myReaction ? '' : 'text-text-dim'} ${reactionAnim ? 'heart-bounce' : ''}`}
+            onClick={(e) => { e.stopPropagation(); handleReaction() }}
+            onTouchStart={handleReactionTouchStart}
+            onTouchEnd={handleReactionTouchEnd}
+            onTouchMove={handleReactionTouchMove}
+          >
+            {myReaction
+              ? <span className="text-[1.2rem] leading-none">{myReaction.emoji}</span>
+              : <span className="material-symbols-outlined text-[1.1rem]">favorite</span>
+            }
+            <span className={myReaction ? 'font-bold' : ''}>{reactions.length}</span>
+          </button>
+
+          {/* Reaction Picker Popup */}
+          {showReactionPicker && (
+            <div
+              className="reaction-picker"
+              onMouseEnter={handleReactionPickerEnter}
+              onMouseLeave={handleReactionPickerLeave}
+              onClick={e => e.stopPropagation()}
+            >
+              {REACTION_EMOJIS.map(emoji => (
+                <button
+                  key={emoji}
+                  className={`reaction-picker-emoji ${myReaction?.emoji === emoji ? 'reaction-picker-emoji-active' : ''}`}
+                  onClick={(e) => { e.stopPropagation(); handleReaction(emoji) }}
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Reaction breakdown tooltip on hover over the count */}
+          {reactions.length > 0 && Object.keys(reactionCounts).length > 1 && (
+            <div className="reaction-breakdown">
+              {Object.entries(reactionCounts).sort((a, b) => b[1] - a[1]).map(([emoji, count]) => (
+                <span key={emoji} className="reaction-breakdown-item">
+                  <span>{emoji}</span>
+                  <span className="text-[0.7rem] font-bold">{count}</span>
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
         <button className={`bg-none border-none cursor-pointer text-[0.9rem] py-1.5 px-3 rounded-lg flex items-center gap-1.5 hover:bg-primary-dim transition-colors ${showComments ? 'text-primary' : 'text-text-dim'}`} onClick={(e) => { e.stopPropagation(); toggleComments(); }}><span className="material-symbols-outlined">mode_comment</span> <span>{comments.length}</span></button>
       </div>
       {(showComments || closingComments) && (

@@ -57,7 +57,7 @@ function App() {
 
     // Global realtime channel:
     // - Uses Postgres changes when available
-    // - Also listens to broadcast events as a reliable fallback for likes/comments
+    // - Also listens to broadcast events as a reliable fallback for likes/comments/reactions
     const globalChannel = interactionsChannel
       .on('broadcast', { event: 'like' }, ({ payload }) => {
         if (payload?.sender_id && payload.sender_id === session.user.id) return
@@ -71,6 +71,10 @@ function App() {
         if (payload?.sender_id && payload.sender_id === session.user.id) return
         window.dispatchEvent(new CustomEvent('tweety_global_comment_like', { detail: payload }))
       })
+      .on('broadcast', { event: 'reaction' }, ({ payload }) => {
+        if (payload?.sender_id && payload.sender_id === session.user.id) return
+        window.dispatchEvent(new CustomEvent('tweety_global_reaction', { detail: payload }))
+      })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'likes' }, (payload) => {
         window.dispatchEvent(new CustomEvent('tweety_global_like', { detail: payload }))
       })
@@ -79,6 +83,9 @@ function App() {
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'comment_likes' }, (payload) => {
         window.dispatchEvent(new CustomEvent('tweety_global_comment_like', { detail: payload }))
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'reactions' }, (payload) => {
+        window.dispatchEvent(new CustomEvent('tweety_global_reaction', { detail: payload }))
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles' }, (payload) => {
         window.dispatchEvent(new CustomEvent('tweety_profile_updated', { detail: payload.new }))

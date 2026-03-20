@@ -663,4 +663,131 @@ html.light-mode {
   flex: 0 0 100%;
   scroll-snap-align: center;
   scroll-snap-stop: always;
+}
+
+/* ─── Reaction Picker ─── */
+.reaction-picker {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 10px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-dark);
+  border-radius: 28px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255,255,255,0.04);
+  z-index: 100;
+  animation: reactionPickerPop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  white-space: nowrap;
+}
+
+@keyframes reactionPickerPop {
+  0% {
+    transform: translateX(-50%) scale(0.5);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(-50%) scale(1);
+    opacity: 1;
+  }
+}
+
+.reaction-picker-emoji {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  font-size: 1.35rem;
+  border: none;
+  background: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.18s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.15s ease;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.reaction-picker-emoji:hover {
+  transform: scale(1.35);
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.reaction-picker-emoji:active {
+  transform: scale(1.1);
+}
+
+.reaction-picker-emoji-active {
+  background-color: rgba(0, 191, 166, 0.15);
+  border-radius: 50%;
+}
+
+.reaction-picker-emoji-active:hover {
+  background-color: rgba(0, 191, 166, 0.25);
+}
+
+/* Breakdown tooltip: shows per-emoji counts on hover */
+.reaction-breakdown {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: none;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-dark);
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  z-index: 99;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: reactionPickerPop 0.2s ease;
+}
+
+/* Show breakdown when hovering the reaction button wrapper AND picker is NOT showing */
+.relative:hover > .reaction-breakdown {
+  display: flex;
+}
+
+/* Hide breakdown when picker is visible — prevents overlap */
+.relative:has(.reaction-picker) > .reaction-breakdown {
+  display: none !important;
+}
+
+.reaction-breakdown-item {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.85rem;
+  color: var(--color-text-dim);
+}
+
+/* Mobile: ensure picker is fully visible */
+@media (max-width: 768px) {
+  .reaction-picker {
+    left: 0;
+    transform: translateX(0);
+    animation: reactionPickerPopMobile 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  @keyframes reactionPickerPopMobile {
+    0% {
+      transform: translateX(0) scale(0.5);
+      opacity: 0;
+    }
+    100% {
+      transform: translateX(0) scale(1);
+      opacity: 1;
+    }
+  }
+
+  .reaction-breakdown {
+    left: 0;
+    transform: translateX(0);
+  }
 }
