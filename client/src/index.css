@@ -711,9 +711,20 @@ html.light-mode {
   -webkit-user-select: none;
 }
 
-.reaction-picker-emoji:hover {
-  transform: scale(1.35);
-  background-color: rgba(255, 255, 255, 0.08);
+@media (hover: hover) {
+  .reaction-picker-emoji:hover {
+    transform: scale(1.35);
+    background-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .reaction-picker-emoji-active:hover {
+    background-color: rgba(0, 191, 166, 0.25);
+  }
+
+  /* Show breakdown when hovering the reaction button AND picker is NOT showing */
+  .reaction-btn:hover ~ .reaction-breakdown {
+    display: flex;
+  }
 }
 
 .reaction-picker-emoji:active {
@@ -723,10 +734,6 @@ html.light-mode {
 .reaction-picker-emoji-active {
   background-color: rgba(0, 191, 166, 0.15);
   border-radius: 50%;
-}
-
-.reaction-picker-emoji-active:hover {
-  background-color: rgba(0, 191, 166, 0.25);
 }
 
 /* Breakdown tooltip: shows per-emoji counts on hover */
@@ -747,11 +754,6 @@ html.light-mode {
   white-space: nowrap;
   pointer-events: none;
   animation: reactionPickerPop 0.2s ease;
-}
-
-/* Show breakdown when hovering the reaction button wrapper AND picker is NOT showing */
-.relative:hover > .reaction-breakdown {
-  display: flex;
 }
 
 /* Hide breakdown when picker is visible — prevents overlap */

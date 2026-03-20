@@ -839,6 +839,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
   }
 
   const handleReactionHoverEnter = () => {
+    if (window.matchMedia('(hover: none)').matches) return
     clearTimeout(reactionHoverTimer.current)
     reactionHoverTimer.current = setTimeout(() => {
       setShowReactionPicker(true)
@@ -846,6 +847,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
   }
 
   const handleReactionHoverLeave = () => {
+    if (window.matchMedia('(hover: none)').matches) return
     clearTimeout(reactionHoverTimer.current)
     // Small delay before closing so user can move to the picker
     reactionHoverTimer.current = setTimeout(() => {
@@ -1427,8 +1429,6 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
         {/* Reaction Button + Picker */}
         <div
           className="relative flex items-center gap-0.5"
-          onMouseEnter={handleReactionHoverEnter}
-          onMouseLeave={handleReactionHoverLeave}
           ref={reactionBtnRef}
           onClick={e => e.stopPropagation()}
         >
@@ -1438,6 +1438,8 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
             onTouchStart={handleReactionTouchStart}
             onTouchEnd={handleReactionTouchEnd}
             onTouchMove={handleReactionTouchMove}
+            onMouseEnter={handleReactionHoverEnter}
+            onMouseLeave={handleReactionHoverLeave}
           >
             {myReaction
               ? <span className="text-[1.2rem] leading-none">{myReaction.emoji}</span>
