@@ -809,27 +809,17 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
     }
   }, [])
 
-  // Close reaction picker on outside click and scroll without blocking
+  // Close reaction picker on scroll (click-away is now handled by the true invisible overlay)
   React.useEffect(() => {
     if (!showReactionPicker) return
-    
-    const handleOutsideClick = (e) => {
-      // If clicking inside the reaction component, let it handle its own clicks
-      if (reactionBtnRef.current && reactionBtnRef.current.contains(e.target)) return
-      closeReactionPicker()
-    }
     
     const handleScroll = () => {
       closeReactionPicker()
     }
 
-    document.addEventListener('mousedown', handleOutsideClick)
-    document.addEventListener('touchstart', handleOutsideClick)
-    window.addEventListener('scroll', handleScroll, true) // capturing true catches scroll on any scrollable container
+    window.addEventListener('scroll', handleScroll, true)
 
     return () => {
-      document.removeEventListener('mousedown', handleOutsideClick)
-      document.removeEventListener('touchstart', handleOutsideClick)
       window.removeEventListener('scroll', handleScroll, true)
     }
   }, [showReactionPicker, closeReactionPicker])
@@ -1490,8 +1480,14 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
 
           {/* Reaction Picker Popup */}
           {showReactionPicker && (
-            <div
-              className={`reaction-picker ${closingReactionPicker ? 'reaction-picker-closing' : ''}`}
+            <>
+              {/* Invisible blocking overlay */}
+              <div 
+                className="fixed inset-0 z-40 bg-transparent"
+                onClick={(e) => { e.stopPropagation(); closeReactionPicker() }}
+              />
+              <div
+                className={`reaction-picker ${closingReactionPicker ? 'reaction-picker-closing' : ''}`}
               onMouseEnter={handleReactionPickerEnter}
               onMouseLeave={handleReactionPickerLeave}
               onAnimationEnd={() => {
@@ -1512,6 +1508,7 @@ export default function PostCard({ post, user, onDelete, onNavigate, defaultOpen
                 </button>
               ))}
             </div>
+            </>
           )}
         </div>
 
