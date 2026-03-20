@@ -2,7 +2,7 @@
 CREATE TABLE IF NOT EXISTS reactions (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   post_id UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES profiles(user_id) ON DELETE CASCADE,
   emoji TEXT NOT NULL CHECK (emoji IN ('❤️', '😂', '🤬', '😮', '💔')),
   created_at TIMESTAMPTZ DEFAULT now(),
   UNIQUE(post_id, user_id)
@@ -28,9 +28,10 @@ CREATE POLICY "Users can delete their own reactions"
 CREATE INDEX IF NOT EXISTS idx_reactions_post_id ON reactions(post_id);
 
 -- Migrate existing likes to reactions as ❤️ (idempotent — skips duplicates)
--- Only migrate likes whose post still exists to avoid FK violations from orphaned rows
+-- Only migrate likes whose post AND user profile still exist to avoid FK violations from orphaned rows
 INSERT INTO reactions (post_id, user_id, emoji, created_at)
 SELECT l.post_id, l.user_id, '❤️', l.created_at
 FROM likes l
 WHERE EXISTS (SELECT 1 FROM posts p WHERE p.id = l.post_id)
+  AND EXISTS (SELECT 1 FROM profiles pr WHERE pr.user_id = l.user_id)
 ON CONFLICT (post_id, user_id) DO NOTHING;
